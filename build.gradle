@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+    id 'antlr'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+//sourceSets {
+//    main {
+//        java {
+//            srcDir '${buildDir.absolutePath}/generated-src/antlr/main'
+//        }
+//    }
+//}
+
+generateGrammarSource {
+//    outputDirectory = file(antlrGen)
+//    maxHeapSize = '64m'
+    arguments += ['-visitor', '-long-messages', '-package', 'java_parser']
+}
+//compileJava.dependsOn generateGrammarSource
+
+dependencies {
+//    implementation 'org.antlr:antlr4:4.13.0'
+    antlr 'org.antlr:antlr4:4.13.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
