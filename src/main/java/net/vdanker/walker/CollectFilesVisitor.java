@@ -8,7 +8,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CollectFiles extends SimpleFileVisitor<Path> {
+public class CollectFilesVisitor extends SimpleFileVisitor<Path> {
 
     List<File> files = new ArrayList<>();
 
