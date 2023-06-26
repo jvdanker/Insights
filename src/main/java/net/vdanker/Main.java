@@ -22,10 +22,7 @@ public class Main {
         Files.walkFileTree(startingDir, c);
 
         List<File> files = c.getFiles();
-//        files.stream().forEach(f -> System.out.println(f.getAbsolutePath()));
-        files = files.stream().filter(f -> f.getAbsolutePath().equals("/Users/juan/workspace/JavaStats/src/main/java/net/vdanker/parser/JavaFileParser.java")).toList();
-
-        System.out.println(files);
+        files = files.stream().filter(f -> f.getAbsolutePath().equals("/Users/juan/workspace/github.com/Insights/src/main/java/net/vdanker/parser/JavaFileParser.java")).toList();
         List<Pair<String, JavaStats>> collect = files.stream()
                 .map(f -> {
                     try {
