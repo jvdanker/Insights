@@ -20,16 +20,10 @@ public class Main {
                 FileSystems.getDefault().getPath("src"),
                 visitor);
 
-        final List<File> files = visitor.getFiles();
-        final List<File> filteredFiles = files.stream().filter(f -> f.getAbsolutePath().equals("/Users/juan/workspace/github.com/Insights/src/main/java/net/vdanker/parser/JavaFileParser.java")).toList();
-
-        List<Pair<String, JavaStats>> collect = filteredFiles.stream()
+        visitor.getFiles().stream()
+                .filter(f -> f.getAbsolutePath().contains("JavaFileParser.java"))
                 .map(FileMapper::toInputStream)
                 .map(InputStreamMapper::toJavaStats)
-                .toList();
-
-        collect.forEach(System.out::println);
+                .forEach(System.out::println);
     }
-
-
 }
