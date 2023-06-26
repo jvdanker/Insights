@@ -1,6 +1,7 @@
 package net.vdanker;
 
-import net.vdanker.parser.JavaFileParser;
+import net.vdanker.mappers.FileMapper;
+import net.vdanker.mappers.InputStreamMapper;
 import net.vdanker.parser.Pair;
 import net.vdanker.parser.model.JavaStats;
 import net.vdanker.walker.CollectFilesVisitor;
@@ -23,18 +24,11 @@ public class Main {
         final List<File> filteredFiles = files.stream().filter(f -> f.getAbsolutePath().equals("/Users/juan/workspace/github.com/Insights/src/main/java/net/vdanker/parser/JavaFileParser.java")).toList();
 
         List<Pair<String, JavaStats>> collect = filteredFiles.stream()
-                .map(Main::parseFile)
+                .map(FileMapper::toInputStream)
+                .map(InputStreamMapper::toJavaStats)
                 .toList();
 
         collect.forEach(System.out::println);
-    }
-
-    static Pair<String, JavaStats> parseFile(File f) {
-        try {
-            return JavaFileParser.parse(Files.newInputStream(f.toPath()));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 
