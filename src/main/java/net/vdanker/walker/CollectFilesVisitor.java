@@ -7,21 +7,18 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class CollectFilesVisitor extends SimpleFileVisitor<Path> {
 
     List<File> files = new ArrayList<>();
 
     public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
-        String fileName = path.getFileName().toString();
-        if (fileName.endsWith(".java")) {
-            files.add(path.toFile());
-        }
-
+        files.add(path.toFile());
         return FileVisitResult.CONTINUE;
     }
 
-    public List<File> getFiles() {
-        return files;
+    public Stream<File> stream() {
+        return this.files.stream();
     }
 }

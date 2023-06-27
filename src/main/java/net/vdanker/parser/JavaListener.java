@@ -1,24 +1,26 @@
 package net.vdanker.parser;
 
 import java_parser.JavaParser;
+import net.vdanker.parser.model.JavaImportDeclaration;
 import net.vdanker.parser.model.JavaMethod;
 import net.vdanker.parser.model.JavaStats;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class JavaListener extends java_parser.JavaParserBaseListener {
-    private final Parser parser;
-    private String packageName;
-    private String className;
+public class JavaListener extends java_parser.JavaParserBaseListener implements ParseTreeListener {
+    final Parser parser;
+    String packageDeclaration;
+    String className;
 
     List<JavaMethod> methods = new ArrayList<>();
-    private List<String> methodCalls;
+    List<String> methodCalls;
 
-    List<String> imports = new ArrayList<>();
-    private int blockStatements;
+    List<JavaImportDeclaration> importDeclarations = new ArrayList<>();
+    int blockStatements;
 
     public JavaListener(Parser parser) {
         this.parser = parser;
@@ -26,17 +28,21 @@ public class JavaListener extends java_parser.JavaParserBaseListener {
 
     JavaStats getStats() {
         return new JavaStats(
-                this.imports,
+                this.packageDeclaration,
+                this.importDeclarations,
                 this.methods
         );
     }
 
     public void enterPackageDeclaration(JavaParser.PackageDeclarationContext ctx) {
-        this.packageName = ctx.qualifiedName().getText();
+        this.packageDeclaration = ctx.qualifiedName().getText();
     }
 
     public void enterImportDeclaration(JavaParser.ImportDeclarationContext ctx) {
-        this.imports.add(ctx.qualifiedName().getText());
+        this.importDeclarations.add(
+                new JavaImportDeclaration(
+                        ctx.qualifiedName().getChild(ctx.qualifiedName().getChildCount() - 1).getText(),
+                        ctx.qualifiedName().getText()));
     }
 
     public void enterClassDeclaration(JavaParser.ClassDeclarationContext ctx) {
@@ -72,8 +78,8 @@ public class JavaListener extends java_parser.JavaParserBaseListener {
     }
 
     public String getFQClassName() {
-        if (this.packageName != null) {
-            return String.format("%s.%s", this.packageName, this.className);
+        if (this.packageDeclaration != null) {
+            return String.format("%s.%s", this.packageDeclaration, this.className);
         }
 
         return this.className;
