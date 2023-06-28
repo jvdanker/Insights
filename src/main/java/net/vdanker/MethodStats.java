@@ -25,15 +25,19 @@ public class MethodStats {
                 FileSystems.getDefault().getPath("src"),
                 visitor);
 
-        GitStreams.fromBareRepository(new File("/Users/juan/workspace/nzqa-bare/eqa-apps-exams.git"))
-                .streamTreeObjects()
-                .filter(t -> t.name().endsWith(".java"))
-//                .filter(t -> t.name().equals("ReportStatus.java"))
-                .map(GitTreeObject::is)
-                .map(InputStreamMapper::toJavaStats)
-                .map(js -> js.getValue().methods())
-                .flatMap(Collection::stream)
-                .collect(groupingBy(JavaMethod::name, summarizingInt(JavaMethod::blockStatements)))
-                .forEach((k,v) -> System.out.println(k + " " + v));
+        Map<String, IntSummaryStatistics> statistics =
+                GitStreams.fromBareRepository(new File("/Users/juan/workspace/nzqa-bare/eqa-apps-exams.git"))
+                        .streamTreeObjects()
+                        .filter(t -> t.name().endsWith(".java"))
+                        .filter(t -> t.path().contains("/test/"))
+                        .map(GitTreeObject::is)
+                        .map(InputStreamMapper::toJavaStats)
+                        .map(js -> js.getValue().methods())
+                        .flatMap(Collection::stream)
+                        .collect(groupingBy(JavaMethod::name, summarizingInt(JavaMethod::blockStatements)));
+
+        statistics.entrySet().stream()
+                .filter(e -> e.getValue().getCount() > 1)
+                .forEach(e -> System.out.println(e.getKey() + " " + e.getValue()));
     }
 }

@@ -58,7 +58,11 @@ public class TreeObjectIterator implements Iterator<GitTreeObject> {
 
             ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray());
 
-            return new GitTreeObject(treeWalk.getObjectId(0), treeWalk.getNameString(), is);
+            return new GitTreeObject(
+                    treeWalk.getObjectId(0),
+                    treeWalk.getPathString(),
+                    treeWalk.getNameString(),
+                    is);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
