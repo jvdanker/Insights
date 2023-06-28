@@ -24,7 +24,7 @@ public class MethodStats {
                 GitStreams.fromBareRepository(new File("/Users/juan/workspace/nzqa-bare/eqa-apps-exams.git"))
                         .streamTreeObjects()
                         .filter(t -> t.name().endsWith(".java"))
-                        .filter(t -> t.path().contains("/test/"))
+                        .filter(t -> !t.path().contains("/test/"))
                         .map(GitTreeObject::is)
                         .map(InputStreamMapper::toJavaStats)
                         .map(js -> js.getValue().methods())
