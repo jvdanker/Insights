@@ -2,11 +2,17 @@ package net.vdanker;
 
 import net.vdanker.mappers.FileMapper;
 import net.vdanker.mappers.InputStreamMapper;
+import net.vdanker.parser.JavaAstViewer;
+import net.vdanker.parser.Pair;
+import net.vdanker.parser.model.JavaStats;
 import net.vdanker.walker.CollectFilesVisitor;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.util.stream.Stream;
 
 public class Main {
 
@@ -16,11 +22,23 @@ public class Main {
                 FileSystems.getDefault().getPath("src"),
                 visitor);
 
-        visitor.stream()
+        Stream<Pair<String, JavaStats>> pairStream = visitor.stream()
                 .filter(f -> f.getName().endsWith(".java"))
                 .filter(f -> f.getAbsolutePath().contains("/Main.java"))
                 .map(FileMapper::toInputStream)
-                .map(InputStreamMapper::toJavaStats)
-                .forEach(System.out::println);
+                .map(InputStreamMapper::toJavaStats);
+
+//        pairStream.forEach(System.out::println);
+
+        pairStream.forEach(p -> {
+            String key = p.getKey();
+            JavaStats value = p.getValue();
+            System.out.println(key);
+            value.methods().forEach(m -> {
+                System.out.printf("  %s - %d\n", m.name(), m.blockStatements());
+
+                m.methodCalls().forEach(mc -> System.out.printf("    %s\n", mc));
+            });
+        });
     }
 }

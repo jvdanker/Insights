@@ -1,6 +1,8 @@
 package net.vdanker.parser;
 
+import com.ibm.icu.impl.StringRange;
 import java_parser.JavaParser;
+import net.vdanker.parser.model.FormalParameter;
 import net.vdanker.parser.model.JavaImportDeclaration;
 import net.vdanker.parser.model.JavaMethod;
 import net.vdanker.parser.model.JavaStats;
@@ -21,6 +23,7 @@ public class JavaListener extends java_parser.JavaParserBaseListener implements 
 
     List<JavaImportDeclaration> importDeclarations = new ArrayList<>();
     int blockStatements;
+    private List<FormalParameter> formalParametersList;
 
     public JavaListener(Parser parser) {
         this.parser = parser;
@@ -57,11 +60,24 @@ public class JavaListener extends java_parser.JavaParserBaseListener implements 
     public void exitMethodDeclaration(JavaParser.MethodDeclarationContext ctx) {
         var method = new JavaMethod(
                 ctx.identifier().getText(),
+                this.formalParametersList,
                 this.blockStatements,
                 this.methodCalls);
         this.methods.add(method);
 
         this.methodCalls = null;
+        this.formalParametersList = null;
+    }
+
+    public void enterFormalParameterList(JavaParser.FormalParameterListContext ctx) {
+        this.formalParametersList = new ArrayList<>();
+    }
+
+    public void enterFormalParameter(JavaParser.FormalParameterContext ctx) {
+        this.formalParametersList.add(new FormalParameter(
+                ctx.typeType().getText(),
+                ctx.variableDeclaratorId().getText()
+        ));
     }
 
     public void enterMethodCall(JavaParser.MethodCallContext ctx) {

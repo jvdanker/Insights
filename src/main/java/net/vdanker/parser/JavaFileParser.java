@@ -28,22 +28,11 @@ public class JavaFileParser {
         var listener = new JavaListener(parser);
 
         var walker = new ParseTreeWalker();
-        walker.walk((ParseTreeListener) listener, tree);
+        walker.walk(listener, tree);
 
-        JFrame frame = new JFrame("Antlr AST");
-        JPanel container = new JPanel();
-        JScrollPane scrollPane = new JScrollPane(container, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-        frame.setContentPane(scrollPane);
+        walker.walk(new IdentifierRewriter(), tree);
 
-        TreeViewer viewer = new TreeViewer(Arrays.asList(parser.getRuleNames()),tree);
-        viewer.setScale(1.5);
-        container.add(viewer);
-
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.pack();
-        frame.setVisible(true);
-
-        return new Pair(
+        return new Pair<>(
                 listener.getFQClassName(),
                 listener.getStats());
     }

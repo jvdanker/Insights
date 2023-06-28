@@ -29,6 +29,8 @@ dependencies {
 //    implementation 'org.antlr:antlr4:4.13.0'
     antlr 'org.antlr:antlr4:4.13.0'
 
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.6.0.202305301015-r'
+
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 }
