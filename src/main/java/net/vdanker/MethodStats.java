@@ -19,12 +19,7 @@ import static java.util.stream.Collectors.*;
 
 public class MethodStats {
 
-    public static void main(String[] args) throws IOException {
-        final CollectFilesVisitor visitor = new CollectFilesVisitor();
-        Files.walkFileTree(
-                FileSystems.getDefault().getPath("src"),
-                visitor);
-
+    public static void main(String[] args) {
         Map<String, IntSummaryStatistics> statistics =
                 GitStreams.fromBareRepository(new File("/Users/juan/workspace/nzqa-bare/eqa-apps-exams.git"))
                         .streamTreeObjects()
