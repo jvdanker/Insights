@@ -14,6 +14,14 @@ import java.nio.file.Files;
 public class AstViewer {
 
     public static void main(String[] args) throws IOException {
+        var a = 0;
+        var b = 1;
+        if (a == 1 && b == 1 || a == 2) {
+
+        } else if (a == 2 || b == 0) {
+
+        }
+
         final CollectFilesVisitor visitor = new CollectFilesVisitor();
         Files.walkFileTree(
                 FileSystems.getDefault().getPath("src/main/java"),
@@ -21,7 +29,7 @@ public class AstViewer {
 
         var context = visitor.stream()
                 .filter(f -> f.getName().endsWith(".java"))
-//                .filter(f -> f.getAbsolutePath().contains("/Main.java"))
+                .filter(f -> f.getAbsolutePath().contains("/AstViewer.java"))
                 .map(FileMapper::toInputStream)
                 .map(InputStreamMapper::toParser)
                 .map(p -> new Pair<>(p, p.compilationUnit()))

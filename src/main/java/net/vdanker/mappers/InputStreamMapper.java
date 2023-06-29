@@ -1,8 +1,10 @@
 package net.vdanker.mappers;
 
-import java_parser.JavaParser;
+import parsers.JavaParser;
+import parsers.XMLParser;
 import net.vdanker.parser.JavaFileParser;
-import net.vdanker.parser.Pair;
+import net.vdanker.parser.XmlFileParser;
+import net.vdanker.parser.model.GitTreeObject;
 import net.vdanker.parser.model.JavaStats;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -12,10 +14,9 @@ import org.antlr.v4.runtime.Token;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class InputStreamMapper {
-    public static Pair<String, JavaStats> toJavaStats(InputStream is) {
+    public static JavaStats toJavaStats(InputStream is) {
         try {
             return JavaFileParser.parse(is);
         } catch (IOException e) {
@@ -23,14 +24,17 @@ public class InputStreamMapper {
         }
     }
 
-    public static JavaParser.CompilationUnitContext toTree(InputStream is) {
+    public static JavaStats toJavaStats(GitTreeObject to) {
         try {
-            CharStream charStream = CharStreams.fromStream(is);
-            var lexer = new java_parser.JavaLexer(charStream);
-            var tokens = new CommonTokenStream(lexer);
-            var parser = new java_parser.JavaParser(tokens);
+            return JavaFileParser.parse(to.is());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-            return parser.compilationUnit();
+    public static XMLParser.DocumentContext parseXml(GitTreeObject to) {
+        try {
+            return XmlFileParser.parse(to.is());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -39,9 +43,9 @@ public class InputStreamMapper {
     public static JavaParser toParser(InputStream is) {
         try {
             CharStream charStream = CharStreams.fromStream(is);
-            var lexer = new java_parser.JavaLexer(charStream);
+            var lexer = new parsers.JavaLexer(charStream);
             var tokens = new CommonTokenStream(lexer);
-            return new java_parser.JavaParser(tokens);
+            return new parsers.JavaParser(tokens);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -50,7 +54,7 @@ public class InputStreamMapper {
     public static List<Token> toTokenEmitter(InputStream is) {
         try {
             CharStream charStream = CharStreams.fromStream(is);
-            var lexer = new java_parser.JavaLexer(charStream);
+            var lexer = new parsers.JavaLexer(charStream);
             var tokens = new CommonTokenStream(lexer);
             tokens.fill();
 

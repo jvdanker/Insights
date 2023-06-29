@@ -1,12 +1,12 @@
 package net.vdanker.mappers;
 
-import java_parser.JavaParser;
+import parsers.JavaParser;
 import net.vdanker.parser.Pair;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import java.util.ArrayList;
 
-public class TestReducer implements java.util.function.BinaryOperator<net.vdanker.parser.Pair<java_parser.JavaParser, java_parser.JavaParser.CompilationUnitContext>> {
+public class TestReducer implements java.util.function.BinaryOperator<net.vdanker.parser.Pair<parsers.JavaParser, parsers.JavaParser.CompilationUnitContext>> {
     @Override
     public Pair<JavaParser, JavaParser.CompilationUnitContext> apply(
             Pair<JavaParser, JavaParser.CompilationUnitContext> accumulator,

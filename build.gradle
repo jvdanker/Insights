@@ -21,7 +21,7 @@ repositories {
 generateGrammarSource {
 //    outputDirectory = file(antlrGen)
 //    maxHeapSize = '64m'
-    arguments += ['-visitor', '-long-messages', '-package', 'java_parser']
+    arguments += ['-visitor', '-long-messages', '-package', 'parsers']
 }
 //compileJava.dependsOn generateGrammarSource
 

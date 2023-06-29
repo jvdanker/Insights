@@ -1,6 +1,6 @@
 package net.vdanker.parser;
 
-import java_parser.JavaParser;
+import parsers.JavaParser;
 import org.antlr.v4.gui.TreeViewer;
 
 import javax.swing.*;

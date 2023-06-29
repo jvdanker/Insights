@@ -1,19 +1,20 @@
 package net.vdanker.parser;
 
 import com.ibm.icu.impl.StringRange;
-import java_parser.JavaParser;
+import parsers.JavaParser;
 import net.vdanker.parser.model.FormalParameter;
 import net.vdanker.parser.model.JavaImportDeclaration;
 import net.vdanker.parser.model.JavaMethod;
 import net.vdanker.parser.model.JavaStats;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class JavaListener extends java_parser.JavaParserBaseListener implements ParseTreeListener {
+public class JavaListener extends parsers.JavaParserBaseListener implements ParseTreeListener {
     final Parser parser;
     String packageDeclaration;
     String className;
@@ -24,6 +25,8 @@ public class JavaListener extends java_parser.JavaParserBaseListener implements 
     List<JavaImportDeclaration> importDeclarations = new ArrayList<>();
     int blockStatements;
     private List<FormalParameter> formalParametersList;
+    private int complexity;
+    private int localVariableDeclarations;
 
     public JavaListener(Parser parser) {
         this.parser = parser;
@@ -31,6 +34,7 @@ public class JavaListener extends java_parser.JavaParserBaseListener implements 
 
     JavaStats getStats() {
         return new JavaStats(
+                this.getFQClassName(),
                 this.packageDeclaration,
                 this.importDeclarations,
                 this.methods
@@ -54,15 +58,21 @@ public class JavaListener extends java_parser.JavaParserBaseListener implements 
 
     public void enterMethodDeclaration(JavaParser.MethodDeclarationContext ctx) {
         this.blockStatements = 0;
+        this.complexity = 1;
+        this.localVariableDeclarations = 0;
         this.methodCalls = new ArrayList<>();
     }
 
     public void exitMethodDeclaration(JavaParser.MethodDeclarationContext ctx) {
+        String identifier = ctx.identifier().getText();
         var method = new JavaMethod(
-                ctx.identifier().getText(),
+                String.format("%s.%s.%s", this.packageDeclaration, this.className, identifier),
+                identifier,
                 this.formalParametersList,
                 this.blockStatements,
-                this.methodCalls);
+                this.methodCalls,
+                this.complexity,
+                this.localVariableDeclarations);
         this.methods.add(method);
 
         this.methodCalls = null;
@@ -93,7 +103,15 @@ public class JavaListener extends java_parser.JavaParserBaseListener implements 
         this.blockStatements++;
     }
 
-    public String getFQClassName() {
+    public void enterParExpression(JavaParser.ParExpressionContext ctx) {
+        this.complexity++;
+    }
+
+    public void enterLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) {
+        this.localVariableDeclarations++;
+    }
+
+    private String getFQClassName() {
         if (this.packageDeclaration != null) {
             return String.format("%s.%s", this.packageDeclaration, this.className);
         }

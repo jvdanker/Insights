@@ -501,7 +501,7 @@ localTypeDeclaration
 statement
     : blockLabel=block
     | ASSERT expression (':' expression)? ';'
-    | IF parExpression statement (ELSE statement)?
+    | ifStatement
     | FOR '(' forControl ')' statement
     | WHILE parExpression statement
     | DO statement WHILE parExpression ';'
@@ -518,6 +518,10 @@ statement
     | statementExpression=expression ';'
     | switchExpression ';'? // Java17
     | identifierLabel=identifier ':' statement
+    ;
+
+ifStatement
+    : IF parExpression statement (ELSE statement)?
     ;
 
 catchClause
@@ -627,8 +631,8 @@ expression
     | expression bop='&' expression  // Level 7, Bitwise AND
     | expression bop='^' expression  // Level 6, Bitwise XOR
     | expression bop='|' expression  // Level 5, Bitwise OR
-    | expression bop='&&' expression  // Level 4, Logic AND
-    | expression bop='||' expression  // Level 3, Logic OR
+    | expression logicAndExpression // expression bop='&&' expression  // Level 4, Logic AND
+    | expression logicOrExpression // expression bop='||' expression  // Level 3, Logic OR
     | <assoc=right> expression bop='?' expression ':' expression  // Level 2, Ternary
     // Level 1, Assignment
     | <assoc=right> expression
@@ -637,6 +641,14 @@ expression
 
     // Level 0, Lambda Expression
     | lambdaExpression // Java8
+    ;
+
+logicAndExpression
+    : bop='&&' expression  // Level 4, Logic AND
+    ;
+
+logicOrExpression
+    : bop='||' expression  // Level 3, Logic OR
     ;
 
 // Java17

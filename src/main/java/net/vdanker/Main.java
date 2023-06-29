@@ -22,7 +22,7 @@ public class Main {
                 FileSystems.getDefault().getPath("src"),
                 visitor);
 
-        Stream<Pair<String, JavaStats>> pairStream = visitor.stream()
+        Stream<JavaStats> pairStream = visitor.stream()
                 .filter(f -> f.getName().endsWith(".java"))
                 .filter(f -> f.getAbsolutePath().contains("/Main.java"))
                 .map(FileMapper::toInputStream)
@@ -31,10 +31,8 @@ public class Main {
 //        pairStream.forEach(System.out::println);
 
         pairStream.forEach(p -> {
-            String key = p.getKey();
-            JavaStats value = p.getValue();
-            System.out.println(key);
-            value.methods().forEach(m -> {
+            System.out.println(p.fqClassName());
+            p.methods().forEach(m -> {
                 System.out.printf("  %s - %d\n", m.name(), m.blockStatements());
 
                 m.methodCalls().forEach(mc -> System.out.printf("    %s\n", mc));
