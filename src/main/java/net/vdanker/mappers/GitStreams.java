@@ -61,4 +61,8 @@ public class GitStreams {
                 .setBare()
                 .build();
     }
+
+    public Repository getRepository() {
+        return repository;
+    }
 }
