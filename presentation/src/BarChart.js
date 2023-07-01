@@ -41,18 +41,32 @@ function drawChart(data) {
     const x = d3.scaleTime()
         .range([0, width])
         .domain([min, max]);
-    let x2 = x.copy();
+    let xx = x.copy();
 
     const y = d3.scaleLinear()
         .range([height,0])
         .domain([0, d3.max(data, (d) => d.count)]);
 
+    const y2 = d3.scaleLinear()
+        .range([0, height/4])
+        .domain([0, d3.max(data, (d) => d.committers)]);
+
     const line = d3.line()
-        .x(d => x2(d.epoch))
+        .x(d => xx(d.epoch))
         .y(d => y(d.count))
         .curve(d3.curveMonotoneX);
 
-    const xAxis = d3.axisBottom(x2);
+    const line2 = d3.line()
+        .x(d => xx(d.epoch))
+        .y(d => y2(d.committers))
+        .curve(d3.curveMonotoneX);
+
+    const line3 = d3.line()
+        .x(d => xx(d.epoch))
+        .y(d => y(d.countNormalized))
+        .curve(d3.curveMonotoneX);
+
+    const xAxis = d3.axisBottom(xx);
     const xAxisG = plotArea
         .append("g")
         .attr("transform","translate("+[0,height]+")")
@@ -63,19 +77,47 @@ function drawChart(data) {
         .append("g")
         .call(yAxis)
 
+    const yAxis2 = d3.axisRight(y2);
+    const yAxisG2 = plotArea
+        .append("g")
+        .attr("transform", "translate(" + width + " ,0)")
+        .call(yAxis2)
+
+    const path3 = plotArea
+        .append("path")
+        .data([data])
+        .attr("d", line3)
+        .attr("clip-path","url(#clippy)")
+        .attr("fill", "none")
+        .attr("stroke", "#112944")
+        .attr("opaque", 0.3)
+        .attr("stroke-width", 2);
+
     const path = plotArea
         .append("path")
         .data([data])
         .attr("d", line)
         .attr("clip-path","url(#clippy)")
         .attr("fill", "none")
-        .attr("stroke", "#454589");
+        .attr("stroke", "#707f8d")
+
+    const path2 = plotArea
+        .append("path")
+        .data([data])
+        .attr("d", line2)
+        .attr("clip-path","url(#clippy)")
+        .attr("fill", "none")
+        .attr("stroke", "#6cb1ff")
+        .attr("stroke-width", 2);
 
     const zoom = d3.zoom()
         .on("zoom", function(event) {
-            x2 = event.transform.rescaleX(x);
-            xAxisG.call(xAxis.scale(x2));
+            xx = event.transform.rescaleX(x);
+            xAxisG.call(xAxis.scale(xx));
+
             path.attr("d", line);
+            path2.attr("d", line2);
+            path3.attr("d", line3);
         })
 
     svg.call(zoom);
@@ -100,7 +142,10 @@ function BarChart() {
             const data2 = data
                 .map(d => {
                     return {
-                        epoch: new Date((+d.epoch) * 86400000), count: +d.count
+                        epoch: new Date((+d.epoch) * 86400000),
+                        count: +d.count,
+                        committers: +d.committers,
+                        countNormalized: +d.count / +d.committers
                     }
                 });
                 // .splice(0, 5);
@@ -112,14 +157,17 @@ function BarChart() {
                 .reduce((acc, curr) =>
                     acc.set(curr.dow, (acc.get(curr.dow) || 0) + curr.count)
                 , new Map());
+
             const sortedDays = new Map(
-                    [...days.entries()]
-                        .sort((a,b) => b[1] - a[1]));
+                    [...days.entries()].sort((a,b) => b[1] - a[1])
+            );
+
             const [mostActiveDow] = sortedDays.keys();
             const mostActiveDowCount = days.get(mostActiveDow);
 
             const min = d3.min(data2, d => d.epoch);
             const max = d3.max(data2, d => d.epoch);
+
             const totalCommits = d3.sum(data2, d => d.count);
             const businessDays = getBusinessDatesCount(min, max);
 
