@@ -4,17 +4,19 @@ import net.vdanker.mappers.GitStreams;
 import net.vdanker.parser.Pair;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,34 +25,67 @@ public class WalkAllCommits {
     public static void main(String[] args) throws IOException, GitAPIException {
         try (FileWriter fw = new FileWriter("/Users/juan/workspace/github.com/Insights/presentation/public/commits-per-day.csv")) {
             PrintWriter pw = new PrintWriter(fw);
-            pw.println("epoch,count,committers");
+            pw.println("epoch,count,committers,files");
 
-            Map<Integer, Pair<Integer, Set<String>>> commitsPerDay = new TreeMap<>();
+            Map<Integer, Results> commitsPerDay = new TreeMap<>();
             try (Repository repo = GitStreams.fromBareRepository(new File("../bare/eqa-apps-exams.git")).getRepository()) {
                 try (Git git = new Git(repo)) {
                     Iterable<RevCommit> commits = git.log().all().call();
-                    for (RevCommit c1 : commits) {
-                        var daysSince1970 = (int)Math.round(Math.floor(c1.getCommitTime() / 86400));
-                        PersonIdent committerIdent = c1.getCommitterIdent();
+
+                    Iterator<RevCommit> iterator = commits.iterator();
+                    RevCommit c1 = iterator.next();
+
+                    for (RevCommit c2 : commits) {
+                        var daysSince1970 = (int)Math.round(Math.floor(c2.getCommitTime() / 86400));
+                        PersonIdent committerIdent = c2.getCommitterIdent();
+                        int filesTouched = compareTrees(repo, git, c1.getTree(), c2.getTree());
+
                         commitsPerDay.merge(
                                 daysSince1970,
-                                new Pair<>(1, Set.of(committerIdent.getEmailAddress())),
-                                WalkAllCommits::sumOfPair);
+                                new Results(1, Set.of(committerIdent.getEmailAddress()), filesTouched),
+                                WalkAllCommits::sumOfResults);
+
+                        c1 = c2;
                     }
                 }
             }
-            commitsPerDay.forEach((k,v) ->  pw.printf("%s,%d,%d\n", k, v.getKey(), v.getValue().size()));
+            commitsPerDay.forEach((k,v) ->  pw.printf("%s,%d,%d,%d\n", k, v.commits(), v.committers().size(), v.files()));
         }
     }
 
-    private static Pair<Integer, Set<String>> sumOfPair(Pair<Integer, Set<String>> p1, Pair<Integer, Set<String>> p2) {
-        return new Pair<>(
-                p1.getKey() + p2.getKey(),
-                Stream.concat(
-                        p1.getValue().stream(),
-                        p2.getValue().stream())
-                        .collect(Collectors.toSet()));
+    private static int compareTrees(Repository repo, Git git, RevTree t1, RevTree t2) throws IOException, GitAPIException {
+        try (ObjectReader reader = repo.newObjectReader()) {
+            CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
+            oldTreeIter.reset(reader, t2);
+
+            CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
+            newTreeIter.reset(reader, t1);
+
+            List<DiffEntry> diffs = git.diff()
+                    .setNewTree(newTreeIter)
+                    .setOldTree(oldTreeIter)
+                    .call();
+
+            return diffs.size();
+//            for (DiffEntry entry : diffs) {
+//                System.out.println(entry.getOldId() + " " + entry.getNewId() + " " + entry);
+//            }
+        }
     }
+
+    private static Results sumOfResults(Results r1, Results r2) {
+        return new Results(
+                r1.commits() + r2.commits(),
+                Stream.concat(
+                        r1.committers().stream(),
+                        r2.committers().stream())
+                        .collect(Collectors.toSet()),
+                r1.files() + r2.files());
+    }
+
+}
+
+record Results(Integer commits, Set<String> committers, Integer files) {
 
 }
 
