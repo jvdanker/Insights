@@ -35,8 +35,10 @@ import addMouseOver from "./MouseOver";
 // }
 
 function drawChart(ref, data, config) {
-    const plot_width = config.svg_width - config.plot_margin.left - config.plot_margin.right;
-    const plot_height = config.svg_height - config.plot_margin.top - config.plot_margin.bottom;
+    let svgHeight = config.svg_height;
+    const margin = config.plot_margin;
+    const plot_width = config.svg_width - margin.left - margin.right;
+    const plot_height = svgHeight -margin.top - margin.bottom;
 
     const svg = d3
         .select(ref)
@@ -45,7 +47,7 @@ function drawChart(ref, data, config) {
             config.plot_margin.right +
             config.plot_margin.left)
         .attr("height",
-            config.svg_height +
+            svgHeight +
             config.plot_margin.top +
             config.plot_margin.bottom);
 
@@ -79,8 +81,11 @@ function drawChart(ref, data, config) {
     const gx = svg.append("g");
 
     var xAxis = (g, x, height) => g
-        .attr("transform","translate("+[0,plot_height] + ")")
-        .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0))
+        .attr("transform","translate("+[0, height - margin.bottom] + ")")
+        .call(
+            d3.axisBottom(x)
+                .ticks(config.svg_width / 80)
+                .tickSizeOuter(0))
 
     // const xAxisG = plot_g
     //     .append("g")
@@ -93,6 +98,9 @@ function drawChart(ref, data, config) {
         .append("g")
         .attr('class', 'y.axis')
         .call(d3.axisLeft(yScaleCommits))
+
+    svg.append("g")
+        .call(xAxis, x, svgHeight);
 
     const path = plot_g
         .append("path")
@@ -117,7 +125,7 @@ function drawChart(ref, data, config) {
         const focusX = x.copy().domain(focusedArea);
         const focusY = yScaleCommits.copy().domain([0, maxY]);
 
-        xAxis.call(xAxisG, focusX, plot_height);
+        // xAxis.call(xAxisG, focusX, plot_height);
         // yAxisG.call(yAxisG, focusY, data.y);
         path.attr("d", lineCountCommits);
     };

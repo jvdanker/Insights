@@ -94,7 +94,11 @@ function BarChart() {
                 updateChart={updateChart}
             />
 
-            <FocusView data={data} config={focus_size} updateCallback={updateCallback}/>
+            <FocusView
+                data={data}
+                config={focus_size}
+                updateCallback={updateCallback}
+            />
 
             {/*<Stats data={data}/>*/}
         </>
