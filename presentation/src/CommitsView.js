@@ -3,53 +3,27 @@ import * as d3 from "d3";
 import "./BarChart.css";
 import addMouseOver from "./MouseOver";
 
-
-
-// function updateRange(data, params) {
-//     const [minX, maxX] = params;
-//     const maxY = d3.max(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : NaN);
-//
-//     update(
-//         x.copy().domain(params),
-//         yScaleCommits.copy().domain([0, maxY]),
-//         xAxisG,
-//         yAxisG
-//     );
-// }
-//
-// function update(x, y, xAxis, yAxis) {
-//     x.domain(d3.extent(data, function(d) { return d.date; }));
-//     y.domain([0, d3.max(data, function(d) { return d.close; })]);
-//
-//     var svg = d3.select("body");
-//
-//     // console.log(svg.select('.line'));
-//     svg.select(".line")
-//         .attr("d", lineCountCommits(data));
-//
-//     // svg.select(".x.axis")
-//     //     .call(xAxis);
-//
-//     // svg.select(".y.axis")
-//     //     .call(yAxis);
-// }
-
 function drawChart(ref, data, config) {
-    let svgHeight = config.svg_height;
+    let width = config.svg_width;
+    let height = config.svg_height;
     const margin = config.plot_margin;
     const plot_width = config.svg_width - margin.left - margin.right;
-    const plot_height = svgHeight -margin.top - margin.bottom;
+    const plot_height = height - margin.top - margin.bottom;
 
     const svg = d3
         .select(ref)
-        .attr("width",
-            config.svg_width +
-            config.plot_margin.right +
-            config.plot_margin.left)
-        .attr("height",
-            svgHeight +
-            config.plot_margin.top +
-            config.plot_margin.bottom);
+        .attr("width", width)
+        .attr("height", height)
+        .attr("viewBox", [0, 0, width, height])
+        .style("display", "block");
+
+    const clip = svg.append("clipPath")
+        .attr("id", "clip")
+        .append("rect")
+        .attr("x", margin.left)
+        .attr("y", 0)
+        .attr("height", height)
+        .attr("width", width - margin.left - margin.right);
 
     const plot_g = svg
         .append("g")
@@ -67,70 +41,68 @@ function drawChart(ref, data, config) {
 
     const x = d3.scaleTime()
         .range([0, plot_width])
-        .domain([d3.min(data, d => d.epoch), d3.max(data, d => d.epoch)]);
+        .domain(d3.extent(data, d => d.epoch));
 
-    const yScaleCommits = d3.scaleLinear()
+    const y = d3.scaleLinear()
         .range([plot_height,0])
         .domain([0, d3.max(data, d => d.count)]);
 
-    const lineCountCommits = d3.line()
-        .x(d => x(d.epoch)) // xx(d.epoch))
-        .y(d => yScaleCommits(d.count))
-        .curve(d3.curveMonotoneX);
+    const lineCountCommits = (x, y) =>
+        d3.line()
+            .x(d => x(d.epoch))
+            .y(d => y(d.count))
+            .curve(d3.curveMonotoneX);
 
     const gx = svg.append("g");
 
+    const gy = svg.append("g");
+
     var xAxis = (g, x, height) => g
         .attr("transform","translate("+[0, height - margin.bottom] + ")")
-        .call(
-            d3.axisBottom(x)
-                .ticks(config.svg_width / 80)
-                .tickSizeOuter(0))
+        .call(d3.axisBottom(x).ticks(config.svg_width / 80).tickSizeOuter(0))
 
-    // const xAxisG = plot_g
-    //     .append("g")
-    //     .attr('class', 'x.axis')
-    //     .attr("transform","translate("+[0,plot_height] + ")")
-    //     .call(d3.axisBottom(x));
+    const yAxis = (g, y) => g
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y));
 
-    // const yAxis = ;
-    const yAxisG = plot_g
-        .append("g")
-        .attr('class', 'y.axis')
-        .call(d3.axisLeft(yScaleCommits))
-
-    svg.append("g")
-        .call(xAxis, x, svgHeight);
-
-    const path = plot_g
+    const linePath = plot_g
         .append("path")
         .datum(data)
-        .attr('class', 'line')
-        .attr("d", lineCountCommits)
+        .attr("clip-path", `url(#clip)`)
         .attr("fill", "none")
         .attr("stroke", "#707f8d");
 
-    plot_g
-        .selectAll("myCircles")
-        .data(data)
+    const selectedCircles = plot_g
+        .selectAll(".myCircle")
+        .data(data, d => d.epoch)
         .enter()
-        .append("circle")
-        .attr("fill", "#5c6bce")
-        .attr("stroke", "none")
-        .attr("cx", function(d) { return x(d.epoch) })
-        .attr("cy", function(d) { return yScaleCommits(d.count) })
-        .attr("r", 2);
+            .append("circle")
+            .attr('class', 'myCircle')
+            .attr("fill", "#5c6bce")
+            .attr("stroke", "none")
+            .attr("cx", function(d) { return x(d.epoch) })
+            .attr("cy", function(d) { return y(d.count) })
+            .attr("r", 2)
+        .exit().remove();
 
-    const updateChart = (focusedArea, maxY) => {
-        const focusX = x.copy().domain(focusedArea);
-        const focusY = yScaleCommits.copy().domain([0, maxY]);
+    let update = focusedArea => {
+        const [minX, maxX] = focusedArea;
+        const maxY = d3.max(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : NaN);
 
-        // xAxis.call(xAxisG, focusX, plot_height);
-        // yAxisG.call(yAxisG, focusY, data.y);
-        path.attr("d", lineCountCommits);
-    };
+        let xCopy = x.copy().domain(focusedArea);
+        let yCopy = y.copy().domain([0, maxY]);
 
-    return [svg, plot_g, x, yScaleCommits, updateChart];
+        gx.call(xAxis, xCopy, height);
+        gy.call(yAxis, yCopy, data.y);
+
+        linePath.attr("d", lineCountCommits(xCopy, yCopy));
+
+        plot_g.selectAll('.myCircle')
+            .attr("cx", function(d) { return xCopy(d.epoch) })
+            .attr("cy", function(d) { return yCopy(d.count) })
+    }
+
+    return [plot_g, x, y, update];
 }
 
 function CommitsView({data, config, updateChart}) {
@@ -138,22 +110,22 @@ function CommitsView({data, config, updateChart}) {
     const onUpdate = useRef();
 
     useEffect(() => {
-        const {focusedArea, maxY} = updateChart;
+        const {focusedArea} = updateChart;
         if (typeof focusedArea === 'undefined') return;
-        onUpdate.current(focusedArea, maxY);
+        onUpdate.current(focusedArea);
     }, [updateChart]);
 
     useEffect( () => {
-        if (data.length === 0) return;
+        if (typeof data === 'undefined' || data.length === 0) return;
 
-        const [svg, plot_g, x, y, updateChart] =
+        const [plot_g, x, y, update] =
             drawChart(elementRef.current, data, config);
-        onUpdate.current = updateChart;
+        onUpdate.current = update;
 
         addMouseOver(plot_g, config, data, x, y);
 
         return () => {
-            while (elementRef.current.firstChild) {
+            while (elementRef.current?.firstChild) {
                 elementRef.current.removeChild(elementRef.current.lastChild);
             }
         }

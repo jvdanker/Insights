@@ -75,9 +75,8 @@ function BarChart() {
             .splice(0, 50);
     }
 
-    function updateCallback(focusedArea, maxY) {
-        console.log('callback', focusedArea, maxY);
-        setUpdateChart({focusedArea, maxY});
+    function updateCallback(focusedArea) {
+        setUpdateChart({focusedArea});
     }
 
     useOnce( () => {
@@ -97,7 +96,7 @@ function BarChart() {
             <FocusView
                 data={data}
                 config={focus_size}
-                updateCallback={updateCallback}
+                update={updateCallback}
             />
 
             {/*<Stats data={data}/>*/}
