@@ -7,7 +7,7 @@ function drawChart(ref, data, config, update) {
     let margin = {
         top: 20,
         right: 20,
-        bottom: 30,
+        bottom: 20,
         left: 40
     }
 
@@ -39,17 +39,18 @@ function drawChart(ref, data, config, update) {
         .defined(d => !isNaN(d.count))
         .x(d => x(d.epoch))
         .y0(y(0))
-        .y1(d => y(d.count));
+        .y1(d => y(d.count * 3));
 
-    const defaultSelection = [x(d3.utcDay.offset(x.domain()[1], - 7)), x.range()[1]];
+    // const defaultSelection = [x(d3.utcYear.offset(x.domain()[1], - 1)), x.range()[1]];
+    const defaultSelection = [x(d3.utcDay.offset(x.domain()[1], - 5)), x.range()[1]];
 
     svg.append('g')
-        .attr("transform", `translate(0,${height - margin.bottom})`)
+        .attr("transform", `translate(0, ${height - margin.bottom})`)
         .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0));
 
     svg.append("path")
         .datum(data)
-        .attr("fill", "#efefef")
+        .attr("fill", "steelblue")
         .attr("d", area);
 
     const gb = svg.append("g")
@@ -79,12 +80,13 @@ function FocusView(props) {
 
     useEffect( () => {
         if (typeof data === 'undefined' || data.length === 0) return;
+        const current = elementRef.current;
 
-        drawChart(elementRef.current, data, config, update);
+        drawChart(current, data, config, update);
 
         return () => {
-            while (elementRef.current?.firstChild) {
-                elementRef.current.removeChild(elementRef.current.lastChild);
+            while (current?.firstChild) {
+                current.removeChild(current.lastChild);
             }
         }
     }, [data, config]);

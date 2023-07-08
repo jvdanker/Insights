@@ -28,35 +28,6 @@ const focus_size = {
     },
 }
 
-// function updateRange(data, params) {
-//     const [minX, maxX] = params;
-//     const maxY = d3.max(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : NaN);
-//
-//     update(
-//         x.copy().domain(params),
-//         yScaleCommits.copy().domain([0, maxY]),
-//         xAxisG,
-//         yAxisG
-//     );
-// }
-//
-// function update(x, y, xAxis, yAxis) {
-//     x.domain(d3.extent(data, function(d) { return d.date; }));
-//     y.domain([0, d3.max(data, function(d) { return d.close; })]);
-//
-//     var svg = d3.select("body");
-//
-//     // console.log(svg.select('.line'));
-//     svg.select(".line")
-//         .attr("d", lineCountCommits(data));
-//
-//     // svg.select(".x.axis")
-//     //     .call(xAxis);
-//
-//     // svg.select(".y.axis")
-//     //     .call(yAxis);
-// }
-
 function BarChart() {
     const [data, setData] = useState([]);
     const [updateChart, setUpdateChart] = useState({});
@@ -66,13 +37,14 @@ function BarChart() {
             .map(d => {
                 return {
                     epoch: new Date((+d.epoch) * 86400000),
-                    count: +d.count,
+                    count: +d.count, // Math.random(), //+d.count,
                     committers: +d.committers,
                     countNormalized: +d.count / +d.committers,
                     files: +d.files
                 }
             })
-            .splice(0, 50);
+            // .splice(0, 20)
+        ;
     }
 
     function updateCallback(focusedArea) {

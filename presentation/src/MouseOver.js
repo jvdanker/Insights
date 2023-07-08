@@ -4,13 +4,14 @@ function addMouseOver(plot_g, config, data, x, y) {
     const plot_width = config.svg_width - config.plot_margin.left - config.plot_margin.right;
     const plot_height = config.svg_height - config.plot_margin.top - config.plot_margin.bottom;
 
-    const svg = d3
-        .select("svg");
+    let currentDomain = data;
+    let currentX = x;
+    let currentY = y;
 
     const mouse_g = plot_g
         .append('g')
         .classed('mouse', true)
-        .style('display', 'none');
+        .style('display', 'block');
 
     mouse_g
         .append('rect')
@@ -25,20 +26,29 @@ function addMouseOver(plot_g, config, data, x, y) {
         .attr("stroke", "steelblue");
 
     mouse_g
-        .append('text');
+        .append('text')
+        .attr('class', 'mouse-text')
+    ;
 
-    const [min, max] = d3.extent(data, d=>d.epoch);
+    const background = plot_g
+        .append('rect')
+        .attr('width', plot_width)
+        .attr('height', plot_height)
+        .attr('fill', '#ffffff')
+        .attr('fill-opacity', '0');
 
-    plot_g.on("mouseover", () => mouse_g.style('display', 'block'));
-    plot_g.on("mouseout", () => mouse_g.style('display', 'none'));
+    background.on("mouseover", () => mouse_g.style('display', 'block'));
 
-    plot_g.on("mousemove", function(event) {
+    background.on("mouseout", () => mouse_g.style('display', 'none'));
+
+    background.on("mousemove", function(event) {
+        const [min, max] = d3.extent(currentDomain);
         const [x_cord,y_cord] = d3.pointer(event);
         const ratio = x_cord / plot_width;
         const currentDateX = new Date(+min + Math.round(ratio * (max - min)));
         const index = d3.bisectCenter(data.map(d => d.epoch), currentDateX);
         const current = data[index];
-        const transX = x(current.epoch);
+        const transX = currentX(current.epoch);
 
         mouse_g
             .attr('transform', `translate(${transX},${0})`);
@@ -46,12 +56,21 @@ function addMouseOver(plot_g, config, data, x, y) {
         mouse_g
             .select('text')
             .text(`${current.epoch.toLocaleDateString()}, ${current.count}`)
-            .attr('text-anchor', current.epoch < (min + max) / 2 ? "start" : "end");
+            .attr('text-anchor', current.epoch < (min + max) / 2 ? "start" : "end")
+            // .attr('x', 0)
+            .attr('y', currentY(current.count))
+        ;
 
         mouse_g
             .select('circle')
-            .attr('cy', y(current.count));
+            .attr('cy', currentY(current.count));
     });
+
+    return {
+        mouseDomain: (d) => currentDomain = d,
+        setCurrentX: (x) => currentX = x,
+        setCurrentY: (y) => currentY = y,
+    }
 }
 
 export default addMouseOver;
