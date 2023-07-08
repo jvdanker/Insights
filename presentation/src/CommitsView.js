@@ -57,7 +57,11 @@ function drawChart(ref, data, config) {
         // .attr("height", 50)
     ;
 
-    const gx = svg.append("g").attr('class', 'gx');
+    const gx = svg
+        .append("g")
+        .attr('class', 'gx')
+        .attr("transform","translate("+[margin.left, height - margin.bottom] + ")")
+    ;
 
     const gy = svg.append("g").attr('class', 'gy');
 
@@ -101,17 +105,26 @@ function drawChart(ref, data, config) {
         let xCopy = x.copy().domain(focusedArea);
         let yCopy = y.copy().domain([0, maxY]);
 
-        gx.call(xAxis, xCopy, height);
-        gy.call(yAxis, yCopy, data.y);
+        gx
+            .transition()
+            .duration(750)
+            .call(xAxis, xCopy, height);
+
+        gy
+            .transition()
+            .duration(750)
+            .call(yAxis, yCopy, data.y);
 
         linePath
             // .transition()
-            // .duration(150)
+            // .duration(100)
             .attr("d", lineCountCommits(xCopy, yCopy))
         ;
 
         plot_g
             .selectAll('.myCircle')
+                // .transition()
+                // .duration(100)
                 .attr("cx", d => xCopy(d.epoch))
                 .attr("cy", d => yCopy(d.count));
 
