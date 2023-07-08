@@ -7,9 +7,9 @@ import {useOnce} from "./UseOnce";
 import FocusView from "./FocusView";
 
 const config_size = {
-    svg_width: 800,
-    svg_height: 200,
-    plot_margin: {
+    width: 800,
+    height: 200,
+    margin: {
         left: 30,
         right: 20,
         top: 20,
@@ -43,12 +43,12 @@ function BarChart() {
                     files: +d.files
                 }
             })
-            // .splice(0, 20)
+            .splice(0, 10)
         ;
     }
 
     function updateCallback(focusedArea) {
-        setUpdateChart({focusedArea});
+        setUpdateChart(focusedArea);
     }
 
     useOnce( () => {
@@ -62,7 +62,7 @@ function BarChart() {
             <CommitsView
                 data={data}
                 config={config_size}
-                updateChart={updateChart}
+                focusedArea={updateChart}
             />
 
             <FocusView

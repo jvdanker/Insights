@@ -42,6 +42,7 @@ function drawChart(ref, data, config, update) {
         .y1(d => y(d.count * 3));
 
     // const defaultSelection = [x(d3.utcYear.offset(x.domain()[1], - 1)), x.range()[1]];
+    // const defaultSelection = [x(d3.utcMonth.offset(x.domain()[1], - 6)), x.range()[1]];
     const defaultSelection = [x(d3.utcDay.offset(x.domain()[1], - 5)), x.range()[1]];
 
     svg.append('g')
