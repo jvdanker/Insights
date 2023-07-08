@@ -1,5 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from "d3";
+import "./BarChart.css";
+import addMouseOver from "./MouseOver";
 
 function drawChart(ref, data, config, update) {
     let margin = {

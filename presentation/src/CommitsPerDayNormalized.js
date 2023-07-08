@@ -1,6 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from "d3";
-import "./BarChart.css";
 
 function getBusinessDatesCount(startDate, endDate) {
     let count = 0;

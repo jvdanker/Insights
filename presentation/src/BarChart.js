@@ -1,7 +1,5 @@
 import React, {useState} from 'react';
 import * as d3 from "d3";
-import "./BarChart.css";
-import {Stats} from "./Stats";
 import CommitsView from "./CommitsView";
 import {useOnce} from "./UseOnce";
 import FocusView from "./FocusView";
@@ -30,6 +28,7 @@ const focus_size = {
 
 function BarChart() {
     const [data, setData] = useState([]);
+    const [chartData, setChartData] = useState([]);
     const [updateChart, setUpdateChart] = useState({});
 
     function convertData(data) {
@@ -47,6 +46,30 @@ function BarChart() {
         ;
     }
 
+    function groupByYear() {
+        console.log(data);
+        console.log(d3.timeYear());
+
+        data.map(d => {
+            console.log(d, d3.timeYear(d.epoch));
+        });
+
+        console.log(d3.timeYear(2020));
+
+        const x = data.reduce((acc, curr) => {
+            const key = d3.timeYear(curr.epoch).valueOf();
+            console.log(key, acc.get(key));
+            return acc.set(key, (acc.get(key) || 0) + curr.count);
+        }, new Map());
+        console.log(x);
+
+        const group = Array.from(
+            x,
+            (i) => { return {epoch: i[0], count: i[1]} });
+        console.table(group);
+        setChartData(group);
+    }
+
     function updateCallback(focusedArea) {
         setUpdateChart(focusedArea);
     }
@@ -54,13 +77,24 @@ function BarChart() {
     useOnce( () => {
         d3.csv("commits-per-day.csv").then(data => {
             setData(convertData(data));
+            setChartData(convertData(data));
         });
     });
 
+    function handleClick(event) {
+        console.log(event.target);
+        if (event.target.name === 'year') {
+            groupByYear();
+        }
+    }
+
     return (
         <>
+            <button name="day" onClick={handleClick}>DAYS</button>
+            <button name="year" onClick={handleClick}>YEARS</button>
+
             <CommitsView
-                data={data}
+                data={chartData}
                 config={config_size}
                 focusedArea={updateChart}
             />

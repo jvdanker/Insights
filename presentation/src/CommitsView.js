@@ -1,7 +1,6 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useRef} from 'react';
 import * as d3 from "d3";
-import "./BarChart.css";
-import addMouseOver from "./MouseOver";
+import {Circles} from "./Circles";
 
 function CommitsView({data, config, focusedArea}) {
     const elementRef = useRef();
@@ -10,11 +9,13 @@ function CommitsView({data, config, focusedArea}) {
     const plot_height = config.height - margin.top - margin.bottom;
 
     const [minX, maxX] = [focusedArea[0], focusedArea[1]];
-    const [, maxY] = d3.extent(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : NaN);
-    // console.log('focusedArea', focusedArea);
+    const maxY = d3.extent(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : 1)[1];
+
+    // console.log('focusedArea', focusedArea, maxY);
 
     const x = d3.scaleTime()
         .range([0, plot_width])
+        // .domain(d3.extent(data, d => d.epoch))
         .domain(focusedArea)
     ;
 
@@ -29,35 +30,21 @@ function CommitsView({data, config, focusedArea}) {
         .curve(d3.curveMonotoneX)
     ;
 
-    const xAxis = useCallback((g, x, height) => g
-        .attr("transform", `translate(${margin.left}, ${height - margin.bottom})`)
-        .call(d3.axisBottom(x).ticks(config.width / 80).tickSizeOuter(0))
-    , [config.width, margin.bottom, margin.left]);
+    // data.forEach(d => {
+    //     console.log(d.epoch.valueOf(), d.count, x(d.epoch), y(d.count));
+    // });
 
-    const yAxis = useCallback((g, y) => g
-        .attr("transform", `translate(${margin.left}, 0)`)
-        .call(d3.axisLeft(y))
-    , [margin.left]);
-
-    const circles = data
-        .filter(d => !isNaN(x(d.epoch) && !isNaN(y(d.count))))
-        .map(d => { return { cx: x(d.epoch), cy: y(d.count) } })
+    d3.select('.gx') // gx
+        .transition()
+        .duration(150)
+        .call(d3.axisBottom(x).ticks().tickSizeOuter(0))
     ;
 
-    useEffect( () => {
-        if (typeof data === 'undefined' || data.length === 0) return;
-
-        d3.select('.gx') // gx
-            .transition()
-            .duration(450)
-            .call(xAxis, x, config.height);
-
-        d3.select('.gy') // gx
-            .transition()
-            .duration(450)
-            .call(yAxis, y, data.y);
-
-    }, [data, config, x, xAxis, y, yAxis]);
+    d3.select('.gy')
+        .transition()
+        .duration(150)
+        .call(d3.axisLeft(y))
+    ;
 
     return (
         <svg id="commits-view" ref={elementRef}
@@ -83,18 +70,11 @@ function CommitsView({data, config, focusedArea}) {
                       d={dLine(data)}
                 />
 
-                {circles.map(c =>
-                    <circle
-                        key={c.cx}
-                        cx={c.cx}
-                        cy={c.cy}
-                        r="4"
-                        className="myCircle"
-                        fill="#707f8d"
-                        stroke="white"
-                        strokeWidth="3"
-                    />
-                )}
+                <Circles
+                    config={config}
+                    data={data}
+                    focusedArea={focusedArea}
+                />
             </g>
 
             <g className="gx"
@@ -102,6 +82,7 @@ function CommitsView({data, config, focusedArea}) {
             />
 
             <g className="gy"
+               transform={`translate(${margin.left}, 0)`}
             />
         </svg>
     );
