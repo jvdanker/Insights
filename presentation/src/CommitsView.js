@@ -15,7 +15,6 @@ function CommitsView({data, config, focusedArea}) {
 
     const x = d3.scaleTime()
         .range([0, plot_width])
-        // .domain(d3.extent(data, d => d.epoch))
         .domain(focusedArea)
     ;
 
@@ -29,10 +28,6 @@ function CommitsView({data, config, focusedArea}) {
         .y(d => y(d.count))
         .curve(d3.curveMonotoneX)
     ;
-
-    // data.forEach(d => {
-    //     console.log(d.epoch.valueOf(), d.count, x(d.epoch), y(d.count));
-    // });
 
     d3.select('.gx') // gx
         .transition()

@@ -29,7 +29,7 @@ function drawChart(data) {
         .append("g")
         .attr("transform","translate("+[padding.left,padding.top]+")")
 
-    const clippingRect = plotArea
+    plotArea
         .append("clipPath")
         .attr("id", "clippy")
         .append("rect")
@@ -46,7 +46,7 @@ function drawChart(data) {
         .range([height,0])
         .domain([0, d3.max(data, d => d.count)]);
 
-    const y2 = d3.scaleLinear()
+    d3.scaleLinear()
         .range([0, height/4])
         .domain([0, d3.max(data, d => d.committers)]);
 
@@ -67,7 +67,7 @@ function drawChart(data) {
         .call(xAxis);
 
     const yAxis = d3.axisLeft(y);
-    const yAxisG = plotArea
+    plotArea
         .append("g")
         .call(yAxis)
 
