@@ -42,20 +42,19 @@ function drawChart(ref, data, config) {
         .attr("id", "clip")
         .append("rect")
         // .style("stroke", "#00ff00")
-        .attr("x", 0)
-        .attr("y", 0)
+        .attr("x", margin.left)
+        .attr("y", margin.top)
         .attr("width", plot_width)
         .attr("height", plot_height)
     ;
 
     const plot_g = svg
         .append("g")
-        // .style("stroke", "#ff000")
         .attr('class', 'plot_g')
         .attr("clip-path", `url(#clip)`)
-        .attr("transform",`translate(${margin.left}, ${margin.top})`)
-        .attr("width", plot_width)
-        .attr("height", plot_height)
+        // .attr("transform",`translate(${margin.left}, ${margin.top})`)
+        // .attr("width", 100)
+        // .attr("height", 50)
     ;
 
     const gx = svg.append("g").attr('class', 'gx');
@@ -89,7 +88,7 @@ function drawChart(ref, data, config) {
             .attr("fill", "#707f8d")
             .attr("stroke", "white")
             .attr("strike-width", "3")
-            .attr("r", 5)
+            .attr("r", 4)
         .exit().remove();
     ;
 

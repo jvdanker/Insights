@@ -58,7 +58,8 @@ function addMouseOver(plot_g, config, data, x, y) {
             .text(`${current.epoch.toLocaleDateString()}, ${current.count}`)
             .attr('text-anchor', current.epoch < (min + max) / 2 ? "start" : "end")
             // .attr('x', 0)
-            .attr('y', currentY(current.count))
+            .attr('y', 40)
+            // .attr('y', currentY(current.count))
         ;
 
         mouse_g
