@@ -3,7 +3,6 @@ import * as d3 from "d3";
 import {Circles} from "./Circles";
 
 function CommitsView({data, config, focusedArea}) {
-    const elementRef = useRef();
     const margin = config.margin;
     const plot_width = config.width - margin.left - margin.right;
     const plot_height = config.height - margin.top - margin.bottom;
@@ -11,38 +10,41 @@ function CommitsView({data, config, focusedArea}) {
     const [minX, maxX] = [focusedArea[0], focusedArea[1]];
     const maxY = d3.extent(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : 1)[1];
 
-    console.log('focusedArea', focusedArea, maxY);
+    // console.log('focusedArea', focusedArea, maxY);
+
+    const svg = d3.select('#commits-view');
 
     const x = d3.scaleTime()
-        .range([0, plot_width])
         .domain(focusedArea)
+        .range([0, plot_width])
     ;
 
     const y = d3.scaleLinear()
-        .range([plot_height + margin.top, margin.top])
         .domain([0, maxY + 1])
+        .range([plot_height + margin.top, margin.top])
     ;
 
     const dLine = d3.line()
+        .defined(d => !isNaN(d.count) && !isNaN(d.epoch))
         .x(d => x(d.epoch))
         .y(d => y(d.count))
         .curve(d3.curveMonotoneX)
     ;
 
-    d3.select('.gx') // gx
+    svg.select('.gx')
         .transition()
         .duration(150)
         .call(d3.axisBottom(x).ticks().tickSizeOuter(0))
     ;
 
-    d3.select('.gy')
+    svg.select('.gy')
         .transition()
         .duration(150)
         .call(d3.axisLeft(y))
     ;
 
     return (
-        <svg id="commits-view" ref={elementRef}
+        <svg id="acommits-view"
              width={config.width}
              height={config.height}
              viewBox={`0, 0, ${config.width}, ${config.height}`}

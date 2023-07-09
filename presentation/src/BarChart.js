@@ -16,12 +16,12 @@ const config_size = {
 }
 
 const focus_size = {
-    svg_width: 800,
-    svg_height: 70,
-    plot_margin: {
+    width: 800,
+    height: 50,
+    margin: {
         left: 30,
         right: 20,
-        top: 20,
+        top: 0,
         bottom: 20,
     },
 }
