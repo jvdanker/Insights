@@ -25,9 +25,13 @@ function drawChart(ref, data, config, update) {
         .on("brush", brushed)
         .on("end", brush_ended);
 
+    let xDomain = d3.extent(data, d => d.epoch);
+    xDomain[0] = d3.utcDay.offset(xDomain[0], - 10);
+
     let x = d3.scaleUtc()
-        .domain(d3.extent(data, d => d.epoch))
+        .domain(xDomain)
         .range([margin.left, width - margin.right]);
+    console.log('x-domain', x.domain());
 
     let y = d3.scaleLinear()
         .domain([0, d3.max(data, d => d.count)])
@@ -42,6 +46,7 @@ function drawChart(ref, data, config, update) {
     // const defaultSelection = [x(d3.utcYear.offset(x.domain()[1], - 1)), x.range()[1]];
     // const defaultSelection = [x(d3.utcMonth.offset(x.domain()[1], - 6)), x.range()[1]];
     const defaultSelection = [x(d3.utcDay.offset(x.domain()[1], - 5)), x.range()[1]];
+    console.log('defaultSelection', defaultSelection);
 
     svg.append('g')
         .attr("transform", `translate(0, ${height - margin.bottom})`)

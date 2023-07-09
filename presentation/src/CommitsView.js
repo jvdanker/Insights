@@ -11,7 +11,7 @@ function CommitsView({data, config, focusedArea}) {
     const [minX, maxX] = [focusedArea[0], focusedArea[1]];
     const maxY = d3.extent(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : 1)[1];
 
-    // console.log('focusedArea', focusedArea, maxY);
+    console.log('focusedArea', focusedArea, maxY);
 
     const x = d3.scaleTime()
         .range([0, plot_width])
