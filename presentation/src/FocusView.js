@@ -2,57 +2,49 @@ import React, {useEffect, useRef} from 'react';
 import * as d3 from "d3";
 
 function drawChart(ref, data, config, update) {
-    let margin = {
-        top: 20,
-        right: 20,
-        bottom: 20,
-        left: 40
-    }
+    const margin = config.margin;
+    const plot_width = config.width - margin.left - margin.right;
 
-    let width = 800;
-    let height = 50;
-
-    const svg = d3
-        .select(ref)
-        .attr("width", width)
-        .attr("height", height)
-        .attr("viewBox", [0, 0, width, height])
-        .style("display", "block");
+    const svg = d3.select(ref);
 
     const brush = d3
         .brushX()
-        .extent([[margin.left, 0.5], [width, height]])
+        .extent([[0, 0], [plot_width, config.height]])
         .on("brush", brushed)
         .on("end", brush_ended);
 
-    let xDomain = d3.extent(data, d => d.epoch);
-    xDomain[0] = d3.utcDay.offset(xDomain[0], - 10);
+    let [xMin, xMax] = d3.extent(data, d => d.epoch);
+    xMin = d3.timeYear.floor(xMin);
+    xMax = d3.timeYear.ceil(xMax);
 
     let x = d3.scaleUtc()
-        .domain(xDomain)
-        .range([margin.left, width - margin.right]);
-    console.log('x-domain', x.domain());
+        .domain([xMin, xMax])
+        .range([0, plot_width]);
 
     let y = d3.scaleLinear()
         .domain([0, d3.max(data, d => d.count)])
-        .range([height - margin.bottom, 4]);
+        .range([config.height - margin.bottom, 4]);
 
     let area = d3.area()
         .defined(d => !isNaN(d.count))
         .x(d => x(d.epoch))
         .y0(y(0))
-        .y1(d => y(d.count * 3));
+        // .y1(d => y(d.count))
+        .y1(d => y(d.count * 3))
+    ;
 
-    // const defaultSelection = [x(d3.utcYear.offset(x.domain()[1], - 1)), x.range()[1]];
-    // const defaultSelection = [x(d3.utcMonth.offset(x.domain()[1], - 6)), x.range()[1]];
-    const defaultSelection = [x(d3.utcDay.offset(x.domain()[1], - 5)), x.range()[1]];
-    console.log('defaultSelection', defaultSelection);
+    const defaultSelection = [
+        x(d3.utcDay.offset(x.domain()[1], - 5)),
+        x.range()[1]
+    ];
 
     svg.append('g')
-        .attr("transform", `translate(0, ${height - margin.bottom})`)
-        .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0));
+        // .attr("transform", `translate(${margin.left}, ${config.height - margin.bottom})`)
+        .attr("transform", `translate(0, ${config.height - margin.bottom})`)
+        .call(d3.axisBottom(x).ticks(config.width / 80).tickSizeOuter(0));
 
     svg.append("path")
+        // .attr("transform", `translate(${margin.left}, 0)`)
         .datum(data)
         .attr("fill", "steelblue")
         .attr("d", area);
@@ -62,24 +54,22 @@ function drawChart(ref, data, config, update) {
         .call(brush.move, defaultSelection);
 
     function brushed({selection}) {
+        // console.log('brushed', selection);
         if (selection) {
-            svg.property("value", selection.map(x.invert, x).map(d3.utcDay.round));
-            // svg.dispatch("input");
-            update(svg.property('value'));
+            update(selection.map(x.invert, x).map(d3.utcDay.round));
         }
     }
 
     function brush_ended({selection}) {
+        // console.log('brush_ended', selection);
         if (!selection) {
             gb.call(brush.move, defaultSelection);
         }
     }
-
-    return svg.node();
 }
 
-function FocusView(props) {
-    const {data, config, update} = props;
+function FocusView({data, config, update}) {
+    const margin = config.margin;
     const elementRef = useRef();
 
     useEffect( () => {
@@ -96,7 +86,15 @@ function FocusView(props) {
     }, [data, config]);
 
     return (
-        <svg ref={elementRef}></svg>
+        <svg id="focus-view"
+             width={config.width}
+             height={config.height}
+             viewBox={`0, 0, ${config.width}, ${config.height}`}
+             display="block"
+             transform={`translate(${margin.left}, 0)`}
+            ref={elementRef}>
+
+        </svg>
     );
 }
 

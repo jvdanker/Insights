@@ -10,7 +10,7 @@ function CommitsView({data, config, focusedArea}) {
     const [minX, maxX] = [focusedArea[0], focusedArea[1]];
     const maxY = d3.extent(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : 1)[1];
 
-    // console.log('focusedArea', focusedArea, maxY);
+    // console.log('focusedArea', focusedArea, minX, maxX, maxY);
 
     const svg = d3.select('#commits-view');
 
@@ -44,7 +44,7 @@ function CommitsView({data, config, focusedArea}) {
     ;
 
     return (
-        <svg id="acommits-view"
+        <svg id="commits-view"
              width={config.width}
              height={config.height}
              viewBox={`0, 0, ${config.width}, ${config.height}`}

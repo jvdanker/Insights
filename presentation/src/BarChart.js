@@ -42,27 +42,23 @@ function BarChart() {
                     files: +d.files
                 }
             })
-            .splice(0, 10)
-            .splice(1, 2)
+            // .splice(0, 10)
+            // .splice(1, 2)
         ;
     }
 
     function groupByYear() {
         console.log(data);
-        console.log(d3.timeYear());
 
-        data.map(d => {
-            console.log(d, d3.timeYear(d.epoch));
-        });
-
-        console.log(d3.timeYear(2020));
+        // data.map(d => {
+        //     console.log(d, d3.timeYear(d.epoch));
+        // });
 
         const x = data.reduce((acc, curr) => {
             const key = d3.timeYear(curr.epoch).valueOf();
             console.log(key, acc.get(key));
             return acc.set(key, (acc.get(key) || 0) + curr.count);
         }, new Map());
-        console.log(x);
 
         const group = Array.from(
             x,
@@ -78,19 +74,19 @@ function BarChart() {
     useOnce( () => {
         d3.csv("commits-per-day.csv").then(data => {
             let convertedData = convertData(data);
-            convertedData = [{
-                "epoch": new Date("2007-02-07T00:00:00.000Z"),
-                "count": 1,
-                "committers": 1,
-                "countNormalized": 1,
-                "files": 3
-            },{
-                "epoch": new Date("2023-02-07T00:00:00.000Z"),
-                "count": 1,
-                "committers": 1,
-                "countNormalized": 1,
-                "files": 3
-            }];
+            // convertedData = [{
+            //     "epoch": new Date("2007-10-07T00:00:00.000Z"),
+            //     "count": 1,
+            //     "committers": 1,
+            //     "countNormalized": 1,
+            //     "files": 3
+            // },{
+            //     "epoch": new Date("2023-02-07T00:00:00.000Z"),
+            //     "count": 1,
+            //     "committers": 1,
+            //     "countNormalized": 1,
+            //     "files": 3
+            // }];
 
             console.log(convertedData);
 
