@@ -49,18 +49,20 @@ function CommitsView({data, config, focusedArea}) {
     ;
 
     const background = svg.select('.mouse-rect');
-    const mouse_g = svg.select('.mouse-rect');
+    const mouse_g = svg.select('.mouse-g');
 
     background.on("mouseover", () => mouse_g.style('display', 'block'));
 
     background.on("mouseout", () => mouse_g.style('display', 'none'));
 
     background.on("mousemove", function(event) {
-        const [min, max] = d3.extent(data);
+        //update(selection.map(x.invert, x).map(d3.utcDay.round));
+
+        const [min, max] = d3.extent(data, d => d.epoch);
         const [x_cord,y_cord] = d3.pointer(event);
-        const ratio = x_cord / plot_width;
-        const currentDateX = new Date(+min + Math.round(ratio * (max - min)));
-        const index = d3.bisectCenter(data.map(d => d.epoch), currentDateX);
+        // const ratio = x_cord / plot_width;
+        // const currentDateX = new Date(+min + Math.round(ratio * (max - min)));
+        const index = d3.bisectCenter(data.map(d => d.epoch), x.invert(x_cord)); // currentDateX);
         const current = data[index];
         const transX = x(current.epoch);
 
@@ -72,7 +74,7 @@ function CommitsView({data, config, focusedArea}) {
             .text(`${current.epoch.toLocaleDateString()}, ${current.count}`)
             .attr('text-anchor', current.epoch < (min + max) / 2 ? "start" : "end")
             // .attr('x', 0)
-            .attr('y', y(current.count))
+            .attr('y', 50) // y(current.count))
         ;
 
         mouse_g
@@ -112,8 +114,12 @@ function CommitsView({data, config, focusedArea}) {
                     <text className="mouse-text"></text>
                 </g>
 
-                <rect className="mouse-rect" width={plot_width} height={plot_height}
-                      fill="#fff" fillOpacity={0} />
+                <rect
+                    className="mouse-rect"
+                    width={plot_width}
+                    height={plot_height}
+                    fill="#fff"
+                    fillOpacity={0} />
 
                 {daysResolution < 400 &&
                     <Circles config={config} data={data} focusedArea={focusedArea} />
