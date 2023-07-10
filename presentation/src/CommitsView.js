@@ -48,6 +48,38 @@ function CommitsView({data, config, focusedArea}) {
         .call(d3.axisLeft(y))
     ;
 
+    const background = svg.select('.mouse-rect');
+    const mouse_g = svg.select('.mouse-rect');
+
+    background.on("mouseover", () => mouse_g.style('display', 'block'));
+
+    background.on("mouseout", () => mouse_g.style('display', 'none'));
+
+    background.on("mousemove", function(event) {
+        const [min, max] = d3.extent(data);
+        const [x_cord,y_cord] = d3.pointer(event);
+        const ratio = x_cord / plot_width;
+        const currentDateX = new Date(+min + Math.round(ratio * (max - min)));
+        const index = d3.bisectCenter(data.map(d => d.epoch), currentDateX);
+        const current = data[index];
+        const transX = x(current.epoch);
+
+        mouse_g
+            .attr('transform', `translate(${transX},${0})`);
+
+        mouse_g
+            .select('text')
+            .text(`${current.epoch.toLocaleDateString()}, ${current.count}`)
+            .attr('text-anchor', current.epoch < (min + max) / 2 ? "start" : "end")
+            // .attr('x', 0)
+            .attr('y', y(current.count))
+        ;
+
+        mouse_g
+            .select('circle')
+            .attr('cy', y(current.count));
+    });
+
     // addMouseOver(svg.select('.plot_g'), config, data, x, y);
 
     return (
@@ -73,6 +105,15 @@ function CommitsView({data, config, focusedArea}) {
                       strokeWidth={strokeWidth}
                       d={dLine(data)}
                 />
+
+                <g className="mouse-g" style={{display: 'block'}}>
+                    <rect width={2} x={-1} height={plot_height} fill='lightgray'></rect>
+                    <circle r={3} stroke="steelblue"></circle>
+                    <text className="mouse-text"></text>
+                </g>
+
+                <rect className="mouse-rect" width={plot_width} height={plot_height}
+                      fill="#fff" fillOpacity={0} />
 
                 {daysResolution < 400 &&
                     <Circles config={config} data={data} focusedArea={focusedArea} />
