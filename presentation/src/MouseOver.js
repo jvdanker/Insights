@@ -1,14 +1,18 @@
 import * as d3 from "d3";
 
 function addMouseOver(plot_g, config, data, x, y) {
-    const plot_width = config.svg_width - config.plot_margin.left - config.plot_margin.right;
-    const plot_height = config.svg_height - config.plot_margin.top - config.plot_margin.bottom;
+    const plot_width = config.width - config.margin.left - config.margin.right;
+    const plot_height = config.height - config.margin.top - config.margin.bottom;
 
     let currentDomain = data;
     let currentX = x;
     let currentY = y;
 
     const mouse_g = plot_g
+        .select('mouse_g')
+        .datum(data);
+
+    mouse_g
         .append('g')
         .classed('mouse', true)
         .style('display', 'block');
@@ -31,6 +35,7 @@ function addMouseOver(plot_g, config, data, x, y) {
     ;
 
     const background = plot_g
+        .select('mouse-rect')
         .append('rect')
         .attr('width', plot_width)
         .attr('height', plot_height)

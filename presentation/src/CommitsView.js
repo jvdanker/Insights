@@ -1,6 +1,7 @@
 import React, {useRef} from 'react';
 import * as d3 from "d3";
 import {Circles} from "./Circles";
+import addMouseOver from "./MouseOver";
 
 function CommitsView({data, config, focusedArea}) {
     const margin = config.margin;
@@ -46,6 +47,8 @@ function CommitsView({data, config, focusedArea}) {
         .duration(150)
         .call(d3.axisLeft(y))
     ;
+
+    // addMouseOver(svg.select('.plot_g'), config, data, x, y);
 
     return (
         <svg id="commits-view"
