@@ -10,6 +10,10 @@ function CommitsView({data, config, focusedArea}) {
     const [minX, maxX] = [focusedArea[0], focusedArea[1]];
     const maxY = d3.extent(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : 1)[1];
 
+    const daysResolution = d3.timeDay.count(d3.timeYear(minX), maxX);
+
+    const strokeWidth = (daysResolution < 2000) ? 2 : 1;
+
     // console.log('focusedArea', focusedArea, minX, maxX, maxY);
 
     const svg = d3.select('#commits-view');
@@ -63,15 +67,13 @@ function CommitsView({data, config, focusedArea}) {
                       clipPath="url(#clip)"
                       fill="none"
                       stroke="#707f8d"
-                      strokeWidth={2}
+                      strokeWidth={strokeWidth}
                       d={dLine(data)}
                 />
 
-                <Circles
-                    config={config}
-                    data={data}
-                    focusedArea={focusedArea}
-                />
+                {daysResolution < 400 &&
+                    <Circles config={config} data={data} focusedArea={focusedArea} />
+                }
             </g>
 
             <g className="gx"

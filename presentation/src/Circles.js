@@ -9,6 +9,12 @@ export function Circles({config, data, focusedArea}) {
     const [minX, maxX] = [focusedArea[0], focusedArea[1]];
     const maxY = d3.extent(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : 1)[1];
 
+    const daysResolution = d3.timeDay.count(d3.timeYear(minX), maxX);
+    // console.log('daysResolution', daysResolution);
+
+    const strokeWidth = (daysResolution < 400) ? 2 : 0;
+    const r = (daysResolution < 400) ? 3 : 2;
+
     const x = d3.scaleTime()
         .range([0, plot_width])
         .domain(focusedArea)
@@ -33,11 +39,11 @@ export function Circles({config, data, focusedArea}) {
                     key={c.cx}
                     cx={c.cx}
                     cy={c.cy}
-                    r="4"
+                    r={r}
                     className="myCircle"
                     fill="#707f8d"
                     stroke="white"
-                    strokeWidth="3"
+                    strokeWidth={strokeWidth}
                 />
             )
             }

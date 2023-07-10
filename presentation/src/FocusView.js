@@ -45,8 +45,8 @@ function drawChart(ref, data, config, update) {
 
     svg.append("path")
         // .attr("transform", `translate(${margin.left}, 0)`)
-        .datum(data)
         .attr("fill", "steelblue")
+        .datum(data)
         .attr("d", area);
 
     const gb = svg.append("g")
