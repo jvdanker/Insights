@@ -1,6 +1,7 @@
 import React from 'react';
 import * as d3 from "d3";
 import {Circles} from "./Circles";
+import './CommitsView.css';
 
 function CommitsView({data, config, focusedArea}) {
     const margin = config.margin;
@@ -11,8 +12,8 @@ function CommitsView({data, config, focusedArea}) {
     const maxY = d3.extent(data, d => minX <= d.epoch && d.epoch <= maxX ? d.count : 1)[1];
 
     const daysResolution = d3.timeDay.count(d3.timeYear(minX), maxX);
-
-    const strokeWidth = (daysResolution < 2000) ? 2 : 1;
+    const showCircles = daysResolution < 1000;
+    const strokeWidth = (daysResolution < 500) ? 2 : 1;
 
     // console.log('focusedArea', focusedArea, minX, maxX, maxY);
 
@@ -57,10 +58,7 @@ function CommitsView({data, config, focusedArea}) {
     background.on("mousemove", function(event) {
         //update(selection.map(x.invert, x).map(d3.utcDay.round));
 
-        const [min, max] = d3.extent(data, d => d.epoch);
         const [x_cord] = d3.pointer(event);
-        // const ratio = x_cord / plot_width;
-        // const currentDateX = new Date(+min + Math.round(ratio * (max - min)));
         const index = d3.bisectCenter(data.map(d => d.epoch), x.invert(x_cord + margin.left)); // currentDateX);
         const current = data[index];
         const transX = x(current.epoch);
@@ -71,14 +69,14 @@ function CommitsView({data, config, focusedArea}) {
         mouse_g
             .select('text')
             .text(`${current.epoch.toLocaleDateString()}, ${current.count}`)
-            .attr('text-anchor', current.epoch < (min + max) / 2 ? "start" : "end")
+            .attr('text-anchor', (x_cord - margin.left) < (plot_width / 2) ? "start" : "end")
             // .attr('x', 0)
-            .attr('y', 50) // y(current.count))
+            .attr('y', 20) // y(current.count))
         ;
 
         mouse_g
             .select('circle')
-            .attr('cy', y(current.count));
+            .attr('cy', y(current.count) - margin.top);
     });
 
     // addMouseOver(svg.select('.plot_g'), config, data, x, y);
@@ -122,7 +120,7 @@ function CommitsView({data, config, focusedArea}) {
                     transform={`translate(${margin.left}, ${margin.top})`}
                 />
 
-                {daysResolution < 400 &&
+                {showCircles &&
                     <Circles config={config} data={data} focusedArea={focusedArea} />
                 }
             </g>
