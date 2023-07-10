@@ -1,7 +1,6 @@
-import React, {useRef} from 'react';
+import React from 'react';
 import * as d3 from "d3";
 import {Circles} from "./Circles";
-import addMouseOver from "./MouseOver";
 
 function CommitsView({data, config, focusedArea}) {
     const margin = config.margin;
@@ -59,15 +58,15 @@ function CommitsView({data, config, focusedArea}) {
         //update(selection.map(x.invert, x).map(d3.utcDay.round));
 
         const [min, max] = d3.extent(data, d => d.epoch);
-        const [x_cord,y_cord] = d3.pointer(event);
+        const [x_cord] = d3.pointer(event);
         // const ratio = x_cord / plot_width;
         // const currentDateX = new Date(+min + Math.round(ratio * (max - min)));
-        const index = d3.bisectCenter(data.map(d => d.epoch), x.invert(x_cord)); // currentDateX);
+        const index = d3.bisectCenter(data.map(d => d.epoch), x.invert(x_cord + margin.left)); // currentDateX);
         const current = data[index];
         const transX = x(current.epoch);
 
         mouse_g
-            .attr('transform', `translate(${transX},${0})`);
+            .attr('transform', `translate(${transX},${margin.top})`);
 
         mouse_g
             .select('text')
@@ -103,13 +102,13 @@ function CommitsView({data, config, focusedArea}) {
                 <path className="linePath"
                       clipPath="url(#clip)"
                       fill="none"
-                      stroke="#707f8d"
+                      stroke="steelblue"
                       strokeWidth={strokeWidth}
                       d={dLine(data)}
                 />
 
-                <g className="mouse-g" style={{display: 'block'}}>
-                    <rect width={2} x={-1} height={plot_height} fill='lightgray'></rect>
+                <g className="mouse-g" style={{display: 'block'}} transform={`translate(${margin.left}, ${margin.top})`}>
+                    <rect width={3} x={-1} height={plot_height} fill='steelblue'></rect>
                     <circle r={3} stroke="steelblue"></circle>
                     <text className="mouse-text"></text>
                 </g>
@@ -119,7 +118,9 @@ function CommitsView({data, config, focusedArea}) {
                     width={plot_width}
                     height={plot_height}
                     fill="#fff"
-                    fillOpacity={0} />
+                    fillOpacity={0}
+                    transform={`translate(${margin.left}, ${margin.top})`}
+                />
 
                 {daysResolution < 400 &&
                     <Circles config={config} data={data} focusedArea={focusedArea} />
