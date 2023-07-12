@@ -21,7 +21,7 @@ export function Circles({config, data, focusedArea}) {
     ;
 
     const y = d3.scaleLinear()
-        .range([plot_height + margin.top, margin.top])
+        .range([plot_height, margin.top])
         .domain([0, maxY + 1])
     ;
 

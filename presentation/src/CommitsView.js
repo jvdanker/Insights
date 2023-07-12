@@ -15,7 +15,7 @@ function CommitsView({data, config, focusedArea}) {
     const showCircles = daysResolution < 1000;
     const strokeWidth = (daysResolution < 500) ? 2 : 1;
 
-    // console.log('focusedArea', focusedArea, minX, maxX, maxY);
+    // console.log('focusedArea', data, focusedArea, minX, maxX, maxY);
 
     const svg = d3.select('#commits-view');
 
@@ -24,13 +24,18 @@ function CommitsView({data, config, focusedArea}) {
         .range([0, plot_width])
     ;
 
+    // console.log('x', x.domain(), x.range());
+
     const y = d3.scaleLinear()
         .domain([0, maxY + 1])
-        .range([plot_height + margin.top, margin.top])
+        .range([plot_height, margin.top])
     ;
+
+    // data.forEach(d => console.log(`d=${JSON.stringify(d)}, x=${x(d.epoch)}, y=${y(d.count)}`));
 
     const dLine = d3.line()
         .defined(d => !isNaN(d.count) && !isNaN(d.epoch))
+        .defined(d => !isNaN(y(d.count)) && !isNaN(x(d.epoch)))
         .x(d => x(d.epoch))
         .y(d => y(d.count))
         .curve(d3.curveMonotoneX)
@@ -47,6 +52,11 @@ function CommitsView({data, config, focusedArea}) {
         .duration(150)
         .call(d3.axisLeft(y))
     ;
+
+    const xTicks = x.ticks();
+    // console.log('ticks', xTicks);
+    const tickWidth = plot_width / xTicks.length;
+    // console.log('tickWidth', tickWidth);
 
     const background = svg.select('.mouse-rect');
     const mouse_g = svg.select('.mouse-g');
@@ -79,7 +89,7 @@ function CommitsView({data, config, focusedArea}) {
             .attr('cy', y(current.count) - margin.top);
     });
 
-    // addMouseOver(svg.select('.plot_g'), config, data, x, y);
+    // ***************************************************************************************************
 
     return (
         <svg id="commits-view"
@@ -96,19 +106,39 @@ function CommitsView({data, config, focusedArea}) {
                     height={plot_height} />
             </clipPath>
 
-            <g className="plot_g" clipPath="url(#clip)">
+            {/*transform={`translate(${margin.left}, ${margin.top})`}*/}
+            <g
+                width={plot_width}
+                height={plot_height}
+                className="plot_g"
+                clipPath="url(#clip)"
+                transform={`translate(0, ${margin.top})`}
+            >
+                <g className="ticks">
+                    {xTicks.map((t, i) =>
+                        <rect
+                            className="xTick"
+                            x={(tickWidth * i)}
+                            width={tickWidth}
+                            height={plot_height}
+                            fill={i%2 === 0 ? '#ffffff' : 'rgba(0,0,0,0.06)'}
+                            fillOpacity={0.5}
+                        />
+                    )};
+                </g>
+
                 <path className="linePath"
-                      clipPath="url(#clip)"
+                      // clipPath="url(#clip)"
                       fill="none"
                       stroke="steelblue"
                       strokeWidth={strokeWidth}
                       d={dLine(data)}
                 />
 
-                <g className="mouse-g" style={{display: 'block'}} transform={`translate(${margin.left}, ${margin.top})`}>
+                <g className="mouse-g" style={{display: 'block'}}>
                     <rect width={3} x={-1} height={plot_height} fill='steelblue'></rect>
                     <circle r={3} stroke="steelblue"></circle>
-                    <text className="mouse-text"></text>
+                    <text className="mouse-text" fontSize="10" fontFamily="sans-serif"></text>
                 </g>
 
                 <rect
@@ -117,7 +147,6 @@ function CommitsView({data, config, focusedArea}) {
                     height={plot_height}
                     fill="#fff"
                     fillOpacity={0}
-                    transform={`translate(${margin.left}, ${margin.top})`}
                 />
 
                 {showCircles &&
@@ -130,7 +159,7 @@ function CommitsView({data, config, focusedArea}) {
             />
 
             <g className="gy"
-               transform={`translate(${margin.left}, 0)`}
+               transform={`translate(${margin.left}, ${margin.top})`}
             />
         </svg>
     );

@@ -42,8 +42,6 @@ function BarChart() {
                     files: +d.files
                 }
             })
-            // .splice(0, 10)
-            // .splice(1, 2)
         ;
     }
 
@@ -71,23 +69,40 @@ function BarChart() {
         setUpdateChart(focusedArea);
     }
 
+    function mockData() {
+        return [{
+            "epoch": new Date("2022-02-01T00:00:00.000Z"),
+            "count": 1,
+            "committers": 1,
+            "countNormalized": 1,
+            "files": 3
+        },{
+            "epoch": new Date("2023-02-01T00:00:00.000Z"),
+            "count": 2,
+            "committers": 1,
+            "countNormalized": 1,
+            "files": 9
+        },{
+            "epoch": new Date("2024-02-01T00:00:00.000Z"),
+            "count": 1,
+            "committers": 1,
+            "countNormalized": 1,
+            "files": 3
+        }];
+    }
+
+    function restrictData() {
+        return data
+            .splice(0, 100)
+        ;
+        // .splice(1, 2)
+    }
+
     useOnce( () => {
         d3.csv("commits-per-day.csv").then(data => {
             let convertedData = convertData(data);
-            // convertedData = [{
-            //     "epoch": new Date("2007-10-07T00:00:00.000Z"),
-            //     "count": 1,
-            //     "committers": 1,
-            //     "countNormalized": 1,
-            //     "files": 3
-            // },{
-            //     "epoch": new Date("2023-02-07T00:00:00.000Z"),
-            //     "count": 1,
-            //     "committers": 1,
-            //     "countNormalized": 1,
-            //     "files": 3
-            // }];
-
+            // convertedData = mockData();
+            // convertedData = restrictData();
             console.log(convertedData);
 
             setData(convertedData);
