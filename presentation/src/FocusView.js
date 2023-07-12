@@ -58,8 +58,14 @@ function drawChart(ref, data, config, update) {
         .call(brush.move, defaultSelection(x));
 
     function brushed(event) {
-        if (event.sourceEvent && event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
+        // if (event.sourceEvent && event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
         console.log('brushed', event);
+
+        if (event.sourceEvent && event.sourceEvent.type === 'zoom') {
+            const xz = event.sourceEvent.transform.rescaleX(x);
+            update(event.selection.map(xz.invert, xz).map(d3.utcDay.round));
+            return;
+        }
 
         const selection = event.selection;
         if (selection) {
@@ -112,11 +118,16 @@ function drawChart(ref, data, config, update) {
         console.log(s, s2);
         console.log(xz.range(), xz.domain(), xz.domain()[0].valueOf());
 
-        let s3 = s.map(xz.invert).map(xz);
-        console.log(s3);
+        let s3 = s.map(xz.invert, xz).map(xz);
+        console.log('s3=', s3);
 
+        console.log('xz axis=', xz.domain());
+        console.log('xaxis=', x.domain());
         gx.call(xAxis, xz);
-        gb.call(brush.move, s3);
+        // x.domain(xz.domain());
+        console.log('xaxis=', x.domain());
+
+        gb.call(brush.move, s3, event);
 
         // gb.call(brush.move, xz.range().map(event.transform.invertX, event.transform));
     }

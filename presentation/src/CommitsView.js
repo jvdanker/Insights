@@ -15,7 +15,7 @@ function CommitsView({data, config, focusedArea}) {
     const showCircles = daysResolution < 1000;
     const strokeWidth = (daysResolution < 500) ? 2 : 1;
 
-    // console.log('focusedArea', data, focusedArea, minX, maxX, maxY);
+    console.log('CommitsView', focusedArea, minX, maxX, maxY);
 
     const svg = d3.select('#commits-view');
 
@@ -117,6 +117,7 @@ function CommitsView({data, config, focusedArea}) {
                 <g className="ticks">
                     {xTicks.map((t, i) =>
                         <rect
+                            key={i}
                             className="xTick"
                             x={(tickWidth * i)}
                             width={tickWidth}

@@ -66,6 +66,8 @@ function BarChart() {
     }
 
     function updateCallback(focusedArea) {
+        console.log('updateCallback', focusedArea);
+
         setUpdateChart(focusedArea);
     }
 
@@ -101,7 +103,7 @@ function BarChart() {
     useOnce( () => {
         d3.csv("commits-per-day.csv").then(data => {
             let convertedData = convertData(data);
-            // convertedData = mockData();
+            convertedData = mockData();
             // convertedData = restrictData();
             console.log(convertedData);
 
