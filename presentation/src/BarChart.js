@@ -3,6 +3,7 @@ import * as d3 from "d3";
 import CommitsView from "./CommitsView";
 import {useOnce} from "./UseOnce";
 import FocusView from "./FocusView";
+import FocusViewBars from "./FocusViewBars";
 
 const config_size = {
     width: 800,
@@ -103,7 +104,7 @@ function BarChart() {
     useOnce( () => {
         d3.csv("commits-per-day.csv").then(data => {
             let convertedData = convertData(data);
-            convertedData = mockData();
+            // convertedData = mockData();
             // convertedData = restrictData();
             console.log(convertedData);
 
@@ -135,6 +136,13 @@ function BarChart() {
                 config={focus_size}
                 update={updateCallback}
             />
+
+            <FocusViewBars
+                data={data}
+                config={focus_size}
+                update={updateCallback}
+            />
+
 
             {/*<Stats data={data}/>*/}
         </>
