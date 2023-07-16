@@ -47,15 +47,15 @@ function BarChart() {
     }
 
     function groupByYear() {
-        console.log(data);
+        // console.log(data);
 
         // data.map(d => {
-        //     console.log(d, d3.timeYear(d.epoch));
+        //     // console.log(d, d3.timeYear(d.epoch));
         // });
 
         const x = data.reduce((acc, curr) => {
             const key = d3.timeYear(curr.epoch).valueOf();
-            console.log(key, acc.get(key));
+            // console.log(key, acc.get(key));
             return acc.set(key, (acc.get(key) || 0) + curr.count);
         }, new Map());
 
@@ -67,7 +67,7 @@ function BarChart() {
     }
 
     function updateCallback(focusedArea) {
-        console.log('updateCallback', focusedArea);
+        // console.log('updateCallback', focusedArea);
 
         setUpdateChart(focusedArea);
     }
@@ -106,7 +106,7 @@ function BarChart() {
             let convertedData = convertData(data);
             // convertedData = mockData();
             // convertedData = restrictData();
-            console.log(convertedData);
+            // console.log(convertedData);
 
             setData(convertedData);
             setChartData(convertedData);
@@ -114,7 +114,7 @@ function BarChart() {
     });
 
     function handleClick(event) {
-        console.log(event.target);
+        // console.log(event.target);
         if (event.target.name === 'year') {
             groupByYear();
         }
@@ -131,11 +131,11 @@ function BarChart() {
                 focusedArea={updateChart}
             />
 
-            <FocusView
-                data={data}
-                config={focus_size}
-                update={updateCallback}
-            />
+            {/*<FocusView*/}
+            {/*    data={data}*/}
+            {/*    config={focus_size}*/}
+            {/*    update={updateCallback}*/}
+            {/*/>*/}
 
             <FocusViewBars
                 data={data}

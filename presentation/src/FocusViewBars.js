@@ -31,7 +31,7 @@ function drawChart(ref, data, config, update) {
     const g = svg.append("g");
 
     let ticks = x.ticks();
-    console.log("bars", ticks.length, plot_width);
+    // console.log("bars", ticks.length, plot_width);
 
     const bars = (data, x) => g.selectAll('.bar')
         .data(data)
@@ -66,7 +66,7 @@ function drawChart(ref, data, config, update) {
 
     function brushed(event) {
         // if (event.sourceEvent && event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
-        console.log('brushed', event);
+        // console.log('brushed', event);
 
         if (event.sourceEvent && event.sourceEvent.type === 'zoom') {
             const xz = event.sourceEvent.transform.rescaleX(x);
@@ -80,14 +80,14 @@ function drawChart(ref, data, config, update) {
             let x1 = new Date(gx.attr('domain-x1'));
             let xz = x.copy().domain([x0, x1]);
 
-            console.log('invert', selection.map(xz.invert, xz));
+            // console.log('invert', selection.map(xz.invert, xz));
             update(selection.map(xz.invert, xz).map(d3.utcDay.round));
         }
     }
 
     function brush_ended(event) {
         if (event.sourceEvent && event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
-        console.log('brush_ended', event);
+        // console.log('brush_ended', event);
 
         const selection = event.selection;
         if (!selection) {
@@ -112,12 +112,12 @@ function drawChart(ref, data, config, update) {
     function zoomed(event) {
         if (event.sourceEvent && event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
 
-        console.log('zoomed', event);
+        // console.log('zoomed', event);
 
-        console.log("domain", x.domain());
+        // console.log("domain", x.domain());
         let xZoom = event.transform.rescaleX(x);
-        console.log("domain", x.domain());
-        console.log("domain", xZoom.domain());
+        // console.log("domain", x.domain());
+        // console.log("domain", xZoom.domain());
         gx.call(xAxis, xZoom);
 
         gx.attr('domain-x0', xZoom.domain()[0]);
@@ -135,22 +135,22 @@ function drawChart(ref, data, config, update) {
 
         // x.copy().domain(x.range().map(this.invertX, this).map(x.invert, x));
         // let s2 = event.transform.invert(s);
-        // let s2 = s.map((x) => {console.log(this, event.transform.scaleX(x)); return event.transform.scaleX(x);}, event.transform);
+        // let s2 = s.map((x) => {// console.log(this, event.transform.scaleX(x)); return event.transform.scaleX(x);}, event.transform);
 
-        // console.log(event.transform);
-        // console.log(s, s2);
-        // console.log(xz.range(), xz.domain(), xz.domain()[0].valueOf());
+        // // console.log(event.transform);
+        // // console.log(s, s2);
+        // // console.log(xz.range(), xz.domain(), xz.domain()[0].valueOf());
 
         if (s) {
             let s3 = s.map(xZoom.invert, xZoom).map(xZoom);
-            console.log('s3=', s3);
+            // console.log('s3=', s3);
             // x = xz;
 
-            console.log('xz axis=', xZoom.domain());
-            console.log('xaxis=', x.domain());
+            // console.log('xz axis=', xZoom.domain());
+            // console.log('xaxis=', x.domain());
 
             // x.domain(xz.domain());
-            console.log('xaxis=', x.domain());
+            // console.log('xaxis=', x.domain());
 
             gb.call(brush.move, s3, event);
         }

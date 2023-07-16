@@ -15,7 +15,7 @@ function CommitsView({data, config, focusedArea}) {
     const showCircles = daysResolution < 1000;
     const strokeWidth = (daysResolution < 500) ? 2 : 1;
 
-    console.log('CommitsView', focusedArea, minX, maxX, maxY);
+    // console.log('CommitsView', focusedArea, minX, maxX, maxY);
 
     const svg = d3.select('#commits-view');
 
@@ -24,14 +24,14 @@ function CommitsView({data, config, focusedArea}) {
         .range([0, plot_width])
     ;
 
-    // console.log('x', x.domain(), x.range());
+    // // console.log('x', x.domain(), x.range());
 
     const y = d3.scaleLinear()
         .domain([0, maxY + 1])
         .range([plot_height, margin.top])
     ;
 
-    // data.forEach(d => console.log(`d=${JSON.stringify(d)}, x=${x(d.epoch)}, y=${y(d.count)}`));
+    // data.forEach(d => // console.log(`d=${JSON.stringify(d)}, x=${x(d.epoch)}, y=${y(d.count)}`));
 
     const dLine = d3.line()
         .defined(d => !isNaN(d.count) && !isNaN(d.epoch))
@@ -54,9 +54,9 @@ function CommitsView({data, config, focusedArea}) {
     ;
 
     const xTicks = x.ticks();
-    // console.log('ticks', xTicks);
+    // // console.log('ticks', xTicks);
     const tickWidth = plot_width / xTicks.length;
-    // console.log('tickWidth', tickWidth);
+    // // console.log('tickWidth', tickWidth);
 
     const background = svg.select('.mouse-rect');
     const mouse_g = svg.select('.mouse-g');
