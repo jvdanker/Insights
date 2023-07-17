@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from "d3";
 
 function drawChart(ref, data, config, update) {
@@ -163,12 +163,37 @@ function drawChart(ref, data, config, update) {
 function FocusViewBars({data, config, update}) {
     const margin = config.margin;
     const elementRef = useRef();
+    const [lastUpdate, setLastUpdate] = useState();
+    const timer = useRef();
+
+    useEffect(() => {
+        if (typeof lastUpdate === 'undefined') return;
+
+        if (timer.current) {
+            clearTimeout(timer.current);
+        }
+
+        timer.current = setTimeout(() => {
+            console.log('fire ' + lastUpdate);
+            update(lastUpdate);
+        }, 1000);
+
+        return () => {
+            if (timer.current) {
+                clearTimeout(timer.current);
+            }
+        }
+    }, [lastUpdate]);
+
+    function deBounce(focus) {
+        setLastUpdate(focus);
+    }
 
     useEffect( () => {
         if (typeof data === 'undefined' || data.length === 0) return;
         const current = elementRef.current;
 
-        drawChart(current, data, config, update);
+        drawChart(current, data, config, deBounce);
 
         return () => {
             while (current?.firstChild) {
