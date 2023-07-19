@@ -2,8 +2,8 @@ import React, {useState} from 'react';
 import * as d3 from "d3";
 import CommitsView from "./CommitsView";
 import {useOnce} from "./UseOnce";
-import FocusView from "./FocusView";
 import FocusViewBars from "./FocusViewBars";
+import {Histogram} from "./Histogram";
 
 const config_size = {
     width: 800,
@@ -31,7 +31,6 @@ function BarChart() {
     const [data, setData] = useState([]);
     const [chartData, setChartData] = useState([]);
     const [updateChart, setUpdateChart] = useState({});
-    const [focus, setFocus] = useState([]);
     const [committersPerDay, setCommittersPerDay] = useState([]);
 
     function convertData(data) {
@@ -73,7 +72,6 @@ function BarChart() {
 
         const commits = data.filter(d => focusedArea[0] < d.epoch && d.epoch < focusedArea[1]);
         console.table(commits);
-        setFocus(focusedArea);
 
         const committersPerDayFiltered = committersPerDay.filter(d => focusedArea[0] < d.epoch && d.epoch < focusedArea[1]);
         console.table(committersPerDayFiltered);
@@ -83,28 +81,31 @@ function BarChart() {
         const mean = d3.mean(commits, c=> c.count); // totalCommits / daysInSelection;
         const commitsDev = d3.deviation(commits, c => c.count);
         const totalFilesTouched = commits.reduce((acc, curr) => acc + curr.files, 0); // FIXME dezelfde files?
-        const committers = committersPerDayFiltered.reduce((acc, curr) => acc + curr.committers.size, 0);
-        const mergedCommitters = committersPerDayFiltered.reduce((acc, curr) => union(acc, curr.committers), new Set());
+        const mergedCommitters = committersPerDayFiltered.reduce((acc, curr) => d3.union(acc, curr.committers), new Set());
         console.table(mergedCommitters);
 
-        console.log(`Selection from ${focus[0]?.toLocaleString()} to ${focus[1]?.toLocaleString()}`);
-        console.log(`Selection from ${focus[0]} to ${focus[1]}`);
+        console.log(`Selection from ${focusedArea[0]?.toLocaleString()} to ${focusedArea[1]?.toLocaleString()}`);
+        console.log(`Selection from ${focusedArea[0]} to ${focusedArea[1]}`);
         console.log(`Days in selection ${daysInSelection}`);
         console.log(`Number of commits ${totalCommits}`);
         console.log(`Number of committers ${mergedCommitters.size}`);
-        console.log(`Commits per day (mean) ${mean}`);
-        console.log(`Commits per day (SD) ${commitsDev}`);
+        console.log(`Commits per day (mean) ${mean}`); // x_
+        console.log(`Commits per day (SD) ${commitsDev}`);  // mu
         console.log(`Total number of files touched ${totalFilesTouched}`);
 
-        setUpdateChart(focusedArea);
-    }
+        // correlation
+        // regression
+        // r^2
 
-    function union(setA, setB) {
-        const _union = new Set(setA);
-        for (const elem of setB) {
-            _union.add(elem);
-        }
-        return _union;
+        // commits vs size of file
+        // commits vs number of methods
+        // commits touching same section of a file
+        // duplicate files across repos
+        // dead vs alive files
+
+        // dev vs dev commits
+
+        setUpdateChart(focusedArea);
     }
 
     function mockData() {
@@ -131,7 +132,7 @@ function BarChart() {
 
     function restrictData() {
         return data
-            .splice(0, 100)
+            .splice(0, 1000)
         ;
         // .splice(1, 2)
     }
@@ -167,18 +168,8 @@ function BarChart() {
         });
     });
 
-    function handleClick(event) {
-        // console.log(event.target);
-        if (event.target.name === 'year') {
-            groupByYear();
-        }
-    }
-
     return (
         <>
-            <button name="day" onClick={handleClick}>DAYS</button>
-            <button name="year" onClick={handleClick}>YEARS</button>
-
             <CommitsView
                 data={chartData}
                 config={config_size}
@@ -191,11 +182,10 @@ function BarChart() {
                 update={updateCallback}
             />
 
-            <div>
-                <div>Selection from {focus[0]?.toLocaleString()} to {focus[1]?.toLocaleString()}</div>
-            </div>
-
-            {/*<Stats data={data}/>*/}
+            <Histogram
+                data={data}
+                focusedArea={updateChart}
+            />
         </>
     );
 }

@@ -112,12 +112,7 @@ function drawChart(ref, data, config, update) {
     function zoomed(event) {
         if (event.sourceEvent && event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
 
-        // console.log('zoomed', event);
-
-        // console.log("domain", x.domain());
         let xZoom = event.transform.rescaleX(x);
-        // console.log("domain", x.domain());
-        // console.log("domain", xZoom.domain());
         gx.call(xAxis, xZoom);
 
         gx.attr('domain-x0', xZoom.domain()[0]);
@@ -126,38 +121,12 @@ function drawChart(ref, data, config, update) {
         d3.selectAll('.bar').remove();
         bars(data, xZoom);
 
-        // path.attr("d", area(data, xz));
-
         let s = d3.brushSelection(gb.node());
-        // let s2 = s.map(event.transform.invertX, event.transform);
-        // let s2 = s.map(event.transform.invertX, event.transform);
-        // let s2 = s.map(event.transform.applyX, event.transform);
-
-        // x.copy().domain(x.range().map(this.invertX, this).map(x.invert, x));
-        // let s2 = event.transform.invert(s);
-        // let s2 = s.map((x) => {// console.log(this, event.transform.scaleX(x)); return event.transform.scaleX(x);}, event.transform);
-
-        // // console.log(event.transform);
-        // // console.log(s, s2);
-        // // console.log(xz.range(), xz.domain(), xz.domain()[0].valueOf());
-
         if (s) {
             let s3 = s.map(xZoom.invert, xZoom).map(xZoom);
-            // console.log('s3=', s3);
-            // x = xz;
-
-            // console.log('xz axis=', xZoom.domain());
-            // console.log('xaxis=', x.domain());
-
-            // x.domain(xz.domain());
-            // console.log('xaxis=', x.domain());
-
             gb.call(brush.move, s3, event);
         }
-
-        // gb.call(brush.move, xz.range().map(event.transform.invertX, event.transform));
     }
-
 }
 
 function FocusViewBars({data, config, update}) {
@@ -193,7 +162,7 @@ function FocusViewBars({data, config, update}) {
         if (typeof data === 'undefined' || data.length === 0) return;
         const current = elementRef.current;
 
-        drawChart(current, data, config, deBounce);
+        drawChart(current, data, config, deBounce); // update
 
         return () => {
             while (current?.firstChild) {
