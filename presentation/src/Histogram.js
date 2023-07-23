@@ -23,8 +23,9 @@ export function Histogram({data, focusedArea}) {
     //     // .paddingInner(1)
     // ;
 
+    const max = d3.max(newData, d => d.count) || 0;
     const x = d3.scaleBand()
-        .domain([...Array(d3.max(newData, d => d.count)).keys()])
+        .domain([...Array(max + 1).keys()])
         // .domain([0, d3.max(newData, d => d.count)])
         .rangeRound([0, width])
         // .range([0, width])
@@ -36,8 +37,8 @@ export function Histogram({data, focusedArea}) {
         .domain(x.domain())
         // .thresholds(x.ticks(10))
     ;
-console.log(x.domain(), x(1));
     const bins = bin(newData); //.filter(b => x(b.x1) > x(b.x0));
+console.log(x.domain(), x(1), bins);
 
     const y = d3.scaleLinear()
         .range([height, 0])
@@ -56,7 +57,6 @@ console.log(x.domain(), x(1));
         .call(d3.axisLeft(y))
     ;
 
-    console.log(bins);
     svg.selectAll('.rects').selectAll("rect")
         .data(bins)
         .join("rect")
