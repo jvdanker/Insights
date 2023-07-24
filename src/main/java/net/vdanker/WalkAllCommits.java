@@ -1,91 +1,123 @@
 package net.vdanker;
 
 import net.vdanker.mappers.GitStreams;
-import net.vdanker.parser.Pair;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.h2.tools.Server;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import java.sql.SQLException;
+import java.sql.PreparedStatement;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class WalkAllCommits {
 
-    public static void main(String[] args) throws IOException, GitAPIException {
-        try (FileWriter fw = new FileWriter("/Users/juan/workspace/github.com/Insights/presentation/public/commits-per-day.csv")) {
-            PrintWriter pw = new PrintWriter(fw);
-            pw.println("epoch,count,committers,files");
+    public static void main(String[] args) throws ClassNotFoundException, SQLException {
+        Class.forName("org.h2.Driver");
+        Server server = Server.createTcpServer("-tcpPort", "9092", "-tcpAllowOthers").start();
+        System.out.println("Server started...");
 
-            Map<Integer, Results> commitsPerDay = new TreeMap<>();
-            try (Repository repo = GitStreams.fromBareRepository(new File("../bare/eqa-apps-exams.git")).getRepository()) {
-                try (Git git = new Git(repo)) {
-                    Iterable<RevCommit> commits = git.log().all().call();
+        createTable("jdbc:h2:./test");
 
-                    Iterator<RevCommit> iterator = commits.iterator();
-                    RevCommit c1 = iterator.next();
+        Path of = Path.of("../bare");
+        File[] files = of.toFile().listFiles();
+        List<File> list = Arrays.stream(files).filter(File::isDirectory).toList();
+        list.forEach(l -> {
+            System.out.println(l.getName());
+            saveCommits(
+                    walkRepo(l.getName().replaceAll("\\.git", ""), l.getAbsolutePath())
+            );
+        });
 
-                    for (RevCommit c2 : commits) {
-                        var daysSince1970 = (int)Math.round(Math.floor(c2.getCommitTime() / 86400));
-                        PersonIdent committerIdent = c2.getCommitterIdent();
-                        int filesTouched = compareTrees(repo, git, c1.getTree(), c2.getTree());
+        System.out.println("Done");
+        new Scanner(System.in).next();
+    }
 
-                        commitsPerDay.merge(
-                                daysSince1970,
-                                new Results(1, Set.of(committerIdent.getEmailAddress()), filesTouched),
-                                WalkAllCommits::sumOfResults);
+    private static void saveCommits(List<Object[]> list) {
+        try (Connection connection = DriverManager.getConnection("jdbc:h2:./test")) {
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "INSERT INTO commits(proj, epoch, author) VALUES (?, ?, ?)")) {
 
-                        c1 = c2;
+                list.forEach(item -> {
+                    try {
+                        ps.setString(1, (String) item[0]);
+                        ps.setInt(2, (Integer) item[1]);
+                        ps.setString(3, (String) item[2]);
+                        ps.addBatch();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
                     }
-                }
+                });
+
+                ps.executeBatch();
             }
-            commitsPerDay.forEach((k,v) ->  pw.printf("%s,%d,%d,%d\n", k, v.commits(), v.committers().size(), v.files()));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private static int compareTrees(Repository repo, Git git, RevTree t1, RevTree t2) throws IOException, GitAPIException {
-        try (ObjectReader reader = repo.newObjectReader()) {
-            CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
-            oldTreeIter.reset(reader, t2);
+    private static List<Object[]> walkRepo(String name, String dir) {
+        List<Object[]> result = new ArrayList<>();
 
-            CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
-            newTreeIter.reset(reader, t1);
+        try (Repository repo = GitStreams.fromBareRepository(new File(dir)).getRepository()) {
+            try (Git git = new Git(repo)) {
+                Iterable<RevCommit> commits = git.log().all().call();
 
-            List<DiffEntry> diffs = git.diff()
-                    .setNewTree(newTreeIter)
-                    .setOldTree(oldTreeIter)
-                    .call();
+                for (RevCommit c : commits) {
+                    if (c.getParentCount() > 1) continue;
 
-            return diffs.size();
-//            for (DiffEntry entry : diffs) {
-//                System.out.println(entry.getOldId() + " " + entry.getNewId() + " " + entry);
-//            }
+                    result.add(
+                            new Object[] {
+                                    name,
+                                    c.getCommitTime(),
+                                    mapEmail(c.getCommitterIdent().getEmailAddress())
+                            });
+                }
+            } catch (NoHeadException e) {
+                // do nothing
+            } catch (GitAPIException | IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return result;
+    }
+
+    private static String mapEmail(String email) {
+        String[] split = email.split("@");
+        if (split.length > 0) {
+            String replace = split[0].toLowerCase().replace('.', ' ');
+            if ("marcusm".equals(replace)) return "marcus manning";
+            if ("oliverl".equals(replace)) return "oliverlayug";
+            if ("rodrigod".equals(replace)) return "rodrigo desouza";
+            if ("yashmeek".equals(replace)) return "yashmeet kaur";
+
+            return replace;
+        }
+
+        return email;
+    }
+
+    private static void createTable(String url) throws SQLException {
+        try (Connection connection = DriverManager.getConnection(url)) {
+            try (Statement s = connection.createStatement()) {
+                s.execute("DROP TABLE IF EXISTS commits");
+                s.execute("""
+                    CREATE TABLE commits (
+                        ID IDENTITY NOT NULL PRIMARY KEY,
+                        proj VARCHAR(64), 
+                        epoch INT, 
+                        author VARCHAR(64))
+                """);
+            }
         }
     }
-
-    private static Results sumOfResults(Results r1, Results r2) {
-        return new Results(
-                r1.commits() + r2.commits(),
-                Stream.concat(
-                        r1.committers().stream(),
-                        r2.committers().stream())
-                        .collect(Collectors.toSet()),
-                r1.files() + r2.files());
-    }
-
 }
-
-record Results(Integer commits, Set<String> committers, Integer files) {
-
-}
-
