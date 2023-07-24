@@ -1,89 +1,168 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from "d3";
-import "./BarChart.css";
-import addMouseOver from "./MouseOver";
 
 function drawChart(ref, data, config, update) {
-    let margin = {
-        top: 20,
-        right: 20,
-        bottom: 20,
-        left: 40
-    }
+    const margin = config.margin;
+    const plot_width = config.width - margin.left - margin.right;
+    const plot_height = config.height - margin.top - margin.bottom;
 
-    let width = 800;
-    let height = 50;
+    const svg = d3.select(ref);
 
-    const svg = d3
-        .select(ref)
-        .attr("width", width)
-        .attr("height", height)
-        .attr("viewBox", [0, 0, width, height])
-        .style("display", "block");
+    let [xMin, xMax] = d3.extent(data, d => d.epoch);
+    xMin = d3.timeYear.floor(xMin);
+    xMax = d3.timeYear.ceil(xMax);
 
-    const brush = d3
-        .brushX()
-        .extent([[margin.left, 0.5], [width, height]])
+    let x = d3.scaleTime()
+        .domain([xMin, xMax])
+        .range([0, plot_width]);
+
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.count)])
+        .range([config.height - margin.bottom, 4]);
+
+    const xAxis = (g, x) => g
+        .attr("transform", `translate(0, ${config.height - margin.bottom})`)
+        .call(d3.axisBottom(x).ticks(config.width / 80).tickSizeOuter(0))
+    ;
+
+    const gx = svg.append('g')
+        .call(xAxis, x);
+
+    const g = svg.append("g");
+
+    let ticks = x.ticks();
+    // console.log("bars", ticks.length, plot_width);
+
+    const bars = (data, x) => g.selectAll('.bar')
+        .data(data)
+        .enter().append('rect')
+        .attr('class', 'bar')
+        .attr('x', d => x(d.epoch))
+        .attr('y', d => y(d.count * 6))
+        .attr('width', 2) // (plot_width / ticks) - 3)
+        .attr('height', d => plot_height - y(d.count * 6))
+        .attr('fill', 'steelblue')
+        // .exit().remove()
+    ;
+
+    // ***************************************************************************************************
+
+    const defaultSelection = x => [
+        x(d3.utcYear.offset(x.domain()[1], - 1)),
+        // x(d3.utcDay.offset(x.domain()[1], - 5)),
+        x.range()[1]
+    ];
+
+    const brush = d3.brushX()
+        .extent([[0, 0], [plot_width, config.height]])
         .on("brush", brushed)
         .on("end", brush_ended);
 
-    let x = d3.scaleUtc()
-        .domain(d3.extent(data, d => d.epoch))
-        .range([margin.left, width - margin.right]);
-
-    let y = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.count)])
-        .range([height - margin.bottom, 4]);
-
-    let area = d3.area()
-        .defined(d => !isNaN(d.count))
-        .x(d => x(d.epoch))
-        .y0(y(0))
-        .y1(d => y(d.count * 3));
-
-    // const defaultSelection = [x(d3.utcYear.offset(x.domain()[1], - 1)), x.range()[1]];
-    // const defaultSelection = [x(d3.utcMonth.offset(x.domain()[1], - 6)), x.range()[1]];
-    const defaultSelection = [x(d3.utcDay.offset(x.domain()[1], - 5)), x.range()[1]];
-
-    svg.append('g')
-        .attr("transform", `translate(0, ${height - margin.bottom})`)
-        .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0));
-
-    svg.append("path")
-        .datum(data)
-        .attr("fill", "steelblue")
-        .attr("d", area);
-
     const gb = svg.append("g")
+        .attr('class', 'g-brush')
         .call(brush)
-        .call(brush.move, defaultSelection);
+        // .call(brush.move, defaultSelection(x))
+    ;
 
-    function brushed({selection}) {
+    function brushed(event) {
+        // if (event.sourceEvent && event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
+        // console.log('brushed', event);
+
+        if (event.sourceEvent && event.sourceEvent.type === 'zoom') {
+            const xz = event.sourceEvent.transform.rescaleX(x);
+            update(event.selection.map(xz.invert, xz).map(d3.utcDay.round));
+            return;
+        }
+
+        const selection = event.selection;
         if (selection) {
-            svg.property("value", selection.map(x.invert, x).map(d3.utcDay.round));
-            // svg.dispatch("input");
-            update(svg.property('value'));
+            let x0 = new Date(gx.attr('domain-x0'));
+            let x1 = new Date(gx.attr('domain-x1'));
+            let xz = x.copy().domain([x0, x1]);
+
+            // console.log('invert', selection.map(xz.invert, xz));
+            update(selection.map(xz.invert, xz).map(d3.utcDay.round));
         }
     }
 
-    function brush_ended({selection}) {
+    function brush_ended(event) {
+        if (event.sourceEvent && event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
+        // console.log('brush_ended', event);
+
+        const selection = event.selection;
         if (!selection) {
-            gb.call(brush.move, defaultSelection);
+            gb.call(brush.move, defaultSelection(x));
         }
     }
 
-    return svg.node();
+    // ***************************************************************************************************
+
+    const zoom = d3.zoom()
+        .scaleExtent([1, 4000])
+        .extent([[margin.left, 0], [config.width - margin.right, config.height]])
+        .translateExtent([[margin.left, 0], [config.width - margin.right, config.height]])
+        // .translateExtent([[margin.left, -Infinity], [config.width - margin.right, Infinity]])
+        .on("zoom", zoomed);
+
+    svg.call(zoom)
+        .on("mousedown.zoom", null)
+        .call(zoom.scaleTo, 1) // , [x(Date.UTC(2001, 8, 1)), 0]);
+    ;
+
+    function zoomed(event) {
+        if (event.sourceEvent && event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
+
+        let xZoom = event.transform.rescaleX(x);
+        gx.call(xAxis, xZoom);
+
+        gx.attr('domain-x0', xZoom.domain()[0]);
+        gx.attr('domain-x1', xZoom.domain()[1]);
+
+        d3.selectAll('.bar').remove();
+        bars(data, xZoom);
+
+        let s = d3.brushSelection(gb.node());
+        if (s) {
+            let s3 = s.map(xZoom.invert, xZoom).map(xZoom);
+            gb.call(brush.move, s3, event);
+        }
+    }
 }
 
-function FocusView(props) {
-    const {data, config, update} = props;
+function FocusViewBars({data, config, update}) {
+    const margin = config.margin;
     const elementRef = useRef();
+    const [lastUpdate, setLastUpdate] = useState();
+    const timer = useRef();
+
+    useEffect(() => {
+        if (typeof lastUpdate === 'undefined') return;
+
+        if (timer.current) {
+            clearTimeout(timer.current);
+        }
+
+        timer.current = setTimeout(() => {
+            console.log('fire ' + lastUpdate);
+            update(lastUpdate);
+        }, 1000);
+
+        return () => {
+            if (timer.current) {
+                clearTimeout(timer.current);
+            }
+        }
+    }, [lastUpdate]);
+
+    function deBounce(focus) {
+        setLastUpdate(focus);
+    }
 
     useEffect( () => {
         if (typeof data === 'undefined' || data.length === 0) return;
         const current = elementRef.current;
 
-        drawChart(current, data, config, update);
+        drawChart(current, data, config, deBounce); // update
 
         return () => {
             while (current?.firstChild) {
@@ -93,9 +172,18 @@ function FocusView(props) {
     }, [data, config]);
 
     return (
-        <svg ref={elementRef}></svg>
+        <>
+            <svg id="focus-view-bars"
+                 width={config.width}
+                 height={config.height}
+                 viewBox={`0, 0, ${config.width}, ${config.height}`}
+                 display="block"
+                 transform={`translate(${margin.left}, 0)`}
+                 ref={elementRef}>
+            </svg>
+        </>
     );
 }
 
-export default FocusView;
+export default FocusViewBars;
 
