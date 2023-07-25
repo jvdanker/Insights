@@ -38,3 +38,20 @@ HAVING COUNT(*) > 1
 ORDER BY 2 DESC;
 
 SELECT type, count(*) from files group by type order by 2 desc;
+
+SELECT count(*) FROM diffs;
+
+SELECT proj, commit, count(*)
+ FROM diffs
+GROUP BY proj, commit
+ORDER BY 3 DESC;
+
+select count(*) from commits where proj = 'eqa-common-security2';
+select count(distinct commit) from diffs;
+
+select proj, NEWPATH, count(*) from DIFFS
+where CHANGETYPE = 'MODIFY'
+  and filetype = 'java'
+group by proj, NEWPATH
+having count(*) > 1
+order by 1, 3 desc;
