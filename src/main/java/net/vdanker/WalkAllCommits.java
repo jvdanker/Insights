@@ -53,13 +53,14 @@ public class WalkAllCommits {
     private static void saveCommits(List<Commit> list) {
         try (Connection connection = DriverManager.getConnection(URL)) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO commits(proj, epoch, author) VALUES (?, ?, ?)")) {
+                    "INSERT INTO commits(proj, commitId, epoch, author) VALUES (?, ?, ?, ?)")) {
 
                 list.forEach(item -> {
                     try {
                         ps.setString(1, item.name);
-                        ps.setDate(2, new java.sql.Date(item.date.getTime()));
-                        ps.setString(3, item.author);
+                        ps.setString(2, item.commitId);
+                        ps.setDate(3, new java.sql.Date(item.date.getTime()));
+                        ps.setString(4, item.author);
                         ps.addBatch();
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -100,7 +101,7 @@ public class WalkAllCommits {
                             : committerIdent.getEmailAddress();
 
                     Date epoch = new Date(c.getCommitTime() * 1000L);
-                    result.add(new Commit(name, epoch, mapEmail(emailAddress)));
+                    result.add(new Commit(name, c.getId().getName(), epoch, mapEmail(emailAddress)));
                 }
 
                 rw.dispose();
@@ -112,7 +113,7 @@ public class WalkAllCommits {
         return result;
     }
 
-    record Commit(String name, Date date, String author) {}
+    record Commit(String name, String commitId, Date date, String author) {}
 
     private static String mapEmail(String email) {
         String[] split = email.split("@");
@@ -136,6 +137,7 @@ public class WalkAllCommits {
                 s.execute("""
                     CREATE TABLE commits (
                         ID IDENTITY NOT NULL PRIMARY KEY,
+                        commitId VARCHAR(64), 
                         proj VARCHAR(64), 
                         epoch DATE, 
                         author VARCHAR(64))
