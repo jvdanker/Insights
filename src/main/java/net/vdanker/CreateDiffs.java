@@ -5,9 +5,8 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.Edit;
-import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.patch.FileHeader;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
@@ -33,7 +32,7 @@ public class CreateDiffs {
         Path of = Path.of("../bare");
         File[] files = of.toFile().listFiles();
         List<File> list = Arrays.stream(files).filter(File::isDirectory).toList();
-        list = list.stream().filter(l -> l.getName().equals("eqa-common-security2.git")).toList();
+        list = list.stream().filter(l -> l.getName().equals("eqa-apps-claims.git")).toList();
 
         list.forEach(l -> {
             System.out.println(l.getName());
@@ -42,18 +41,18 @@ public class CreateDiffs {
             Optional<GetDiffsResult> diffs = getDiffs(name, l.getAbsolutePath());
             if (diffs.isPresent()) {
                 saveDiffEntries(diffs.get().diffs());
-                saveDiffsEdits(diffs.get().edits);
-                saveDiffs(diffs.get().edits);
+                saveDiffsEdits(diffs.get().edits());
+                saveDiffs(diffs.get().edits());
             }
         });
     }
 
-    private static void saveDiffs(List<EditsResult> list) {
+    private static void saveDiffs(List<DiffEdit> list) {
         Map<String, String> diffs = list.stream().collect(
-                Collectors.toMap(e -> e.commitId, e -> e.diff, (e1, e2) -> e1)
+                Collectors.toMap(DiffEdit::commitId, DiffEdit::diff, (e1, e2) -> e1)
         );
 
-        try (Connection connection = DriverManager.getConnection(URL)) {
+        try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO diffs (commit, diff) VALUES (?, ?)")) {
 
@@ -74,13 +73,13 @@ public class CreateDiffs {
         }
     }
 
-    private static void saveDiffsEdits(List<EditsResult> list) {
-        try (Connection connection = DriverManager.getConnection(URL)) {
+    private static void saveDiffsEdits(List<DiffEdit> list) {
+        try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO diffsedits(proj, commit, filename, editType, lines, linesFrom, linesTo) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
 
                 list.forEach(item -> {
-                    item.edits.forEach(edit -> {
+                    item.edits().forEach(edit -> {
                         try {
                             /*
                             An edit where beginA == endA && beginB < endB is an insert edit,
@@ -121,9 +120,9 @@ public class CreateDiffs {
                             int linesFrom = (edit.getEndA() - edit.getBeginA());
                             int linesTo = (edit.getEndB() - edit.getBeginB());
 
-                            ps.setString(1, item.project);
-                            ps.setString(2, item.commitId);
-                            ps.setString(3, item.filename);
+                            ps.setString(1, item.project());
+                            ps.setString(2, item.commitId());
+                            ps.setString(3, item.filename());
                             ps.setString(4, type.toString());
                             ps.setInt(5, lines);
                             ps.setInt(6, linesFrom);
@@ -143,18 +142,19 @@ public class CreateDiffs {
     }
 
     private static void saveDiffEntries(List<DiffEntry> list) {
-        try (Connection connection = DriverManager.getConnection(URL)) {
+        try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO diffentries(commit, proj, oldpath, newpath, changetype, filetype) VALUES (?, ?, ?, ?, ?, ?)")) {
+                    "INSERT INTO diffentries(commit1, commit2, proj, oldpath, newpath, changetype, filetype) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
 
                 list.forEach(item -> {
                     try {
-                        ps.setString(1, item.id);
-                        ps.setString(2, item.proj);
-                        ps.setString(3, item.oldPath);
-                        ps.setString(4, item.newPath);
-                        ps.setString(5, item.type);
-                        ps.setString(6, item.fileType);
+                        ps.setString(1, item.commit1Id());
+                        ps.setString(2, item.commit2Id());
+                        ps.setString(3, item.proj());
+                        ps.setString(4, item.oldPath());
+                        ps.setString(5, item.newPath());
+                        ps.setString(6, item.type());
+                        ps.setString(7, item.fileType());
                         ps.addBatch();
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -168,20 +168,17 @@ public class CreateDiffs {
         }
     }
 
-    record DiffEntry(String id, String proj, String oldPath, String newPath, String type, String fileType) {}
-
-    record GetDiffsResult(List<DiffEntry> diffs, List<EditsResult> edits) {}
-
     private static Optional<GetDiffsResult> getDiffs(String name, String dir) {
         List<DiffEntry> diffEntries = new ArrayList<>();
-        List<EditsResult> editsResult = new ArrayList<>();
+        List<DiffEdit> diffEdits = new ArrayList<>();
 
         try (Repository repo = GitStreams.fromBareRepository(new File(dir)).getRepository()) {
-            Ref head = repo.findRef("HEAD");
+            Ref head = repo.findRef(Constants.HEAD); //"refs/heads/main");
             if (head.getObjectId() == null) return Optional.empty();
 
             try (RevWalk rw = new RevWalk(repo)) {
                 rw.setRetainBody(false);
+                rw.setFirstParent(true);
                 rw.markStart(rw.parseCommit(head.getObjectId()));
 
                 RevCommit c1 = null;
@@ -189,68 +186,33 @@ public class CreateDiffs {
                 RevTree t2;
 
                 for (RevCommit c2 : rw) {
-                    if (c2.getParentCount() > 1) continue;
                     t2 = c2.getTree();
 
-                    if (t1 != null) { // && c1.getId().getName().equals("064e628d8aa172f9a57762d36242baa851da3f12")) {
-                        try (ObjectReader reader = repo.newObjectReader()) {
-                            CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
-                            oldTreeIter.reset(reader, t2);
-
-                            CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
-                            newTreeIter.reset(reader, t1);
-
-                            try (Git git = new Git(repo)) {
-                                List<org.eclipse.jgit.diff.DiffEntry> diffs = git.diff()
-                                        .setNewTree(newTreeIter)
-                                        .setOldTree(oldTreeIter)
-                                        .call();
-
-                                for (org.eclipse.jgit.diff.DiffEntry entry : diffs) {
-                                    if (!org.eclipse.jgit.diff.DiffEntry.ChangeType.MODIFY.equals(entry.getChangeType())) continue;
-
-                                    String type = getExtension(entry.getNewPath());
-
-                                    diffEntries.add(new DiffEntry(
-                                            c1.getId().getName(),
-                                            name,
-                                            entry.getOldPath(),
-                                            entry.getNewPath(),
-                                            entry.getChangeType().toString(),
-                                            type));
-
-                                    if ("java".equals(type)) {
-                                        OutputStream bos = new ByteArrayOutputStream();
-                                        try (DiffFormatter df = new DiffFormatter(bos)) {
-                                            df.setRepository(repo);
-                                            df.setContext(0);
-                                            df.setDiffComparator(WS_IGNORE_ALL);
-                                            df.format(entry);
-
-                                            FileHeader fileHeader = df.toFileHeader(entry);
-                                            editsResult.add(new EditsResult(
-                                                    name,
-                                                    c1.getId().getName(),
-                                                    entry.getNewPath(),
-                                                    fileHeader.toEditList(),
-                                                    bos.toString()));
-
-                                            for (Edit edit : fileHeader.toEditList()) {
-                                                var a = edit.toString();
-                                                System.out.println(a);
-                                            }
-
-                                        }
-                                    }
-                                }
-                            } catch (GitAPIException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
+                    if (t1 != null) {
+                        getDiffsBetweenTwoTrees(
+                                name,
+                                diffEntries,
+                                diffEdits,
+                                repo,
+                                c1,
+                                t1,
+                                t2,
+                                c2);
                     }
 
                     c1 = c2;
                     t1 = t2;
+                }
+
+                if (t1 != null) {
+                    getDiffsBetweenTwoTrees(name,
+                            diffEntries,
+                            diffEdits,
+                            repo,
+                            c1,
+                            t1,
+                            Constants.EMPTY_TREE_ID,
+                            null);
                 }
 
                 rw.dispose();
@@ -259,19 +221,89 @@ public class CreateDiffs {
             throw new RuntimeException(e);
         }
 
-        return Optional.of(new GetDiffsResult(diffEntries, editsResult));
+        return Optional.of(new GetDiffsResult(diffEntries, diffEdits));
     }
 
-    record EditsResult(String project, String commitId, String filename, List<Edit> edits, String diff) {}
+    private static void getDiffsBetweenTwoTrees(
+            String name,
+            List<DiffEntry> diffEntries,
+            List<DiffEdit> diffEdits,
+            Repository repo,
+            RevCommit c1,
+            AnyObjectId t1,
+            AnyObjectId t2,
+            RevCommit c2) throws IOException {
+
+        try (ObjectReader reader = repo.newObjectReader()) {
+            CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
+            if (!t2.equals(Constants.EMPTY_TREE_ID)) {
+                oldTreeIter.reset(reader, t2);
+            }
+
+            CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
+            newTreeIter.reset(reader, t1);
+
+            try (Git git = new Git(repo)) {
+                List<org.eclipse.jgit.diff.DiffEntry> diffs = git.diff()
+                        .setNewTree(newTreeIter)
+                        .setOldTree(oldTreeIter)
+                        .call();
+
+                for (org.eclipse.jgit.diff.DiffEntry entry : diffs) {
+                    String type = getExtension(entry.getNewPath());
+
+                    diffEntries.add(new DiffEntry(
+                            c1.getId().getName(),
+                            c2 == null ? "" : c2.getId().getName(),
+                            name,
+                            entry.getOldPath(),
+                            entry.getNewPath(),
+                            entry.getChangeType().toString(),
+                            type));
+
+                    if ("java".equals(type)) {
+                        DiffEdit diffEdit = createDiffEdits(name, repo, c2, entry);
+                        diffEdits.add(diffEdit);
+                    }
+                }
+            } catch (GitAPIException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static DiffEdit createDiffEdits(
+            String name,
+            Repository repo,
+            RevCommit commit,
+            org.eclipse.jgit.diff.DiffEntry entry) throws IOException {
+
+        OutputStream bos = new ByteArrayOutputStream();
+        try (DiffFormatter df = new DiffFormatter(bos)) {
+            df.setRepository(repo);
+            df.setContext(0);
+            df.setDiffComparator(WS_IGNORE_ALL);
+            df.format(entry);
+
+            FileHeader fileHeader = df.toFileHeader(entry);
+            return new DiffEdit(
+                    name,
+                    commit.getId().getName(),
+                    entry.getNewPath(),
+                    fileHeader.toEditList(),
+                    bos.toString());
+        }
+    }
 
     private static void createTable(String url) throws SQLException {
-        try (Connection connection = DriverManager.getConnection(url)) {
+        try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (Statement s = connection.createStatement()) {
                 s.execute("DROP TABLE IF EXISTS diffentries");
                 s.execute("""
                     CREATE TABLE diffentries (
                         ID IDENTITY NOT NULL PRIMARY KEY,
-                        commit VARCHAR(64) NOT NULL,
+                        commit1 VARCHAR(64) NOT NULL,
+                        commit2 VARCHAR(64) NOT NULL,
                         proj VARCHAR(64) NOT NULL,
                         changetype VARCHAR(64), 
                         oldpath VARCHAR(512),

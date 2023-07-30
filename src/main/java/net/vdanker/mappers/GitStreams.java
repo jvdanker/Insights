@@ -1,6 +1,7 @@
 package net.vdanker.mappers;
 
 import net.vdanker.parser.model.GitTreeObject;
+import org.eclipse.jgit.api.errors.InvalidRefNameException;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -24,7 +25,7 @@ public class GitStreams {
         this.location = location;
         try {
             repository = openRepository(location);
-        } catch (IOException e) {
+        } catch (IOException | InvalidRefNameException e) {
             throw new RuntimeException(e);
         }
     }
@@ -55,9 +56,11 @@ public class GitStreams {
         }
     }
 
-    private static Repository openRepository(File location) throws IOException {
+    private static Repository openRepository(File location) throws IOException, InvalidRefNameException {
         return new FileRepositoryBuilder()
+//                .setGitDir(new File(location, ".git"))
                 .setGitDir(location)
+//                .setInitialBranch("main")
                 .setBare()
                 .build();
     }

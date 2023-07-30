@@ -24,11 +24,16 @@ import java.util.*;
 
 public class DbServer {
 
-    static String URL = "jdbc:h2:./test";
+    static String URL = "jdbc:h2:tcp://localhost/./test";
 
     public static void main(String[] args) throws ClassNotFoundException, SQLException {
         Class.forName("org.h2.Driver");
+
+        try (Connection conn = DriverManager.getConnection("jdbc:h2:file:./test;IFEXISTS=FALSE", "sa", "sa")) {
+        }
+
         Server server = Server.createTcpServer("-tcpPort", "9092", "-tcpAllowOthers").start();
+
         System.out.println("Server started...");
     }
 }

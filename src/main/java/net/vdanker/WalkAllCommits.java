@@ -51,7 +51,7 @@ public class WalkAllCommits {
     }
 
     private static void saveCommits(List<Commit> list) {
-        try (Connection connection = DriverManager.getConnection(URL)) {
+        try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO commits(proj, commitId, epoch, author) VALUES (?, ?, ?, ?)")) {
 
@@ -131,7 +131,7 @@ public class WalkAllCommits {
     }
 
     private static void createTable(String url) throws SQLException {
-        try (Connection connection = DriverManager.getConnection(url)) {
+        try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (Statement s = connection.createStatement()) {
                 s.execute("DROP TABLE IF EXISTS commits");
                 s.execute("""

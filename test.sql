@@ -79,34 +79,23 @@ select distinct edittype
 from DIFFSEDITS;
 
 select a.proj,
-       a.commit,
-       b.EPOCH,
-       b.AUTHOR,
+       b.EPOCH, b.COMMITID,
        SUM(CASE WHEN a.edittype = 'DELETE' THEN a.lines END)  as DELETE,
        SUM(CASE WHEN a.edittype = 'INSERT' THEN a.lines END)  as INSERT,
        SUM(CASE WHEN a.edittype = 'REPLACE' THEN a.lines END) as REPLACE
 from DIFFSEDITS a
          INNER JOIN commits b ON a.commit = b.COMMITID
--- where a.commit = '064e628d8aa172f9a57762d36242baa851da3f12'
-group by a.proj, a.commit, b.EPOCH, b.AUTHOR
-order by b.epoch DESC
-;
-
-select a.proj,
-       extract(year from b.EPOCH),
-       SUM(CASE WHEN a.edittype = 'DELETE' THEN a.lines END)  as DELETE,
-       SUM(CASE WHEN a.edittype = 'INSERT' THEN a.lines END)  as INSERT,
-       SUM(CASE WHEN a.edittype = 'REPLACE' THEN a.lines END) as REPLACE
-from DIFFSEDITS a
-         INNER JOIN commits b ON a.commit = b.COMMITID
-group by a.proj, extract(year from b.EPOCH)
+-- where a.COMMIT = 'dcfb0d9a15c05e0f1fbaa2ff627bcaa097c3b396'
+group by a.proj, b.EPOCH, b.COMMITID
 order by b.epoch DESC
 ;
 
 select *
 from DIFFSEDITS
+where COMMIT = 'd77292047ce2536715bf9b919953280b5a5b9c4f'
 ;
 
 select diff
 from diffs
+where COMMIT = 'b37b061955a5f33d8d423ffa4ee732dcc910d718'
 ;

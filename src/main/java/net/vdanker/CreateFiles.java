@@ -42,7 +42,7 @@ public class CreateFiles {
     }
 
     private static void saveFiles(List<Files> list) {
-        try (Connection connection = DriverManager.getConnection(URL)) {
+        try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO files(proj, filename, path, type) VALUES (?, ?, ?, ?)")) {
 
@@ -109,7 +109,7 @@ public class CreateFiles {
     }
 
     private static void createTable(String url) throws SQLException {
-        try (Connection connection = DriverManager.getConnection(url)) {
+        try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (Statement s = connection.createStatement()) {
                 s.execute("DROP TABLE IF EXISTS files");
                 s.execute("""
