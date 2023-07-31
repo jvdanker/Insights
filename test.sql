@@ -57,8 +57,8 @@ GROUP BY proj, commit
 ORDER BY 3 DESC;
 
 select count(*)
-from commits
-where proj = 'eqa-common-security2';
+from commits;
+
 select count(distinct commit)
 from DIFFENTRIES;
 
@@ -77,39 +77,34 @@ where COMMIT1 = 'd76554b6aa6d2cba1121d0340210916c126fe426'
 
 select b.author, a.*
 from DIFFSEDITS a
-         inner join commits b on a.COMMIT = b.commitId
+         inner join commits b on a.COMMIT = b.commit_id
 where COMMIT = 'd76554b6aa6d2cba1121d0340210916c126fe426'
 ;
 
 select distinct edittype
 from DIFFSEDITS;
 
-CREATE INDEX c_id_1 ON DIFFSEDITS(commit);
-CREATE INDEX c_id_2 ON COMMITS(COMMITID);
-
-select proj, epoch, commitid, delete, insert, replace from (
+select proj, epoch, commit_id, delete, insert, replace from (
 select a.proj,
-       b.EPOCH, b.COMMITID,
+       b.EPOCH, b.commit_id,
        SUM(CASE WHEN a.edittype = 'DELETE' THEN a.lines END)  as DELETE,
        SUM(CASE WHEN a.edittype = 'INSERT' THEN a.lines END)  as INSERT,
        SUM(CASE WHEN a.edittype = 'REPLACE' THEN a.lines END) as REPLACE
 from DIFFSEDITS a
-         INNER JOIN commits b ON a.commit = b.COMMITID
---  where a.COMMIT = 'd76554b6aa6d2cba1121d0340210916c126fe426'
-group by a.proj, b.EPOCH, b.COMMITID) a
--- where delete is null and insert is null and replace > 0
+         INNER JOIN commits b ON a.commit = b.commit_id
+group by a.proj, b.EPOCH, b.commit_id) a
 where delete > 0 and insert is null and replace is null
 order by epoch DESC
 ;
 
-select * from DIFFSEDITS a inner join commits b on a.commit = b.commitid;
+select * from DIFFSEDITS a inner join commits b on a.commit = b.commit_id;
 
 select *
 from DIFFENTRIES
 where COMMIT1 = '762cf8b3ce01d6a10d23da4e4d2111b208a6aae1';
 
 select *
-from DIFFSEDITS a INNER JOIN commits b ON a.commit = b.COMMITID
+from DIFFSEDITS a INNER JOIN commits b ON a.commit = b.commit_id
 where COMMIT = '762cf8b3ce01d6a10d23da4e4d2111b208a6aae1'
 ;
 

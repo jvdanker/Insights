@@ -303,6 +303,7 @@ public class CreateDiffs {
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (Statement s = connection.createStatement()) {
                 s.execute("DROP TABLE IF EXISTS diffentries");
+                s.execute("DROP INDEX IF EXISTS idx_diffentries_commit1");
                 s.execute("""
                     CREATE TABLE diffentries (
                         ID IDENTITY NOT NULL PRIMARY KEY,
@@ -315,8 +316,10 @@ public class CreateDiffs {
                         filetype VARCHAR(64)
                         )
                 """);
+                s.execute("CREATE INDEX idx_diffentries_commit1 ON diffentries(commit1)");
 
                 s.execute("DROP TABLE IF EXISTS diffsedits");
+                s.execute("DROP INDEX IF EXISTS idx_diffsedits_commit");
                 s.execute("""
                     CREATE TABLE diffsedits (
                         ID IDENTITY NOT NULL PRIMARY KEY,
@@ -329,14 +332,17 @@ public class CreateDiffs {
                         linesTo INT
                         )
                 """);
+                s.execute("CREATE INDEX idx_diffsedits_commit ON diffsedits(commit)");
 
                 s.execute("DROP TABLE IF EXISTS diffs");
+                s.execute("DROP INDEX IF EXISTS idx_diffs_commit");
                 s.execute("""
                     CREATE TABLE diffs (
                         commit VARCHAR(64) NOT NULL PRIMARY KEY,
                         diff VARCHAR2
                         )
                 """);
+                s.execute("CREATE INDEX idx_diffs_commit ON diffs(commit)");
             }
         }
     }

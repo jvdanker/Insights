@@ -53,7 +53,7 @@ public class WalkAllCommits {
     private static void saveCommits(List<Commit> list) {
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO commits(proj, commitId, epoch, author) VALUES (?, ?, ?, ?)")) {
+                    "INSERT INTO commits(proj, commit_id, epoch, author) VALUES (?, ?, ?, ?)")) {
 
                 list.forEach(item -> {
                     try {
@@ -132,14 +132,18 @@ public class WalkAllCommits {
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (Statement s = connection.createStatement()) {
                 s.execute("DROP TABLE IF EXISTS commits");
+                s.execute("DROP INDEX IF EXISTS idx_commits_commitId");
+
                 s.execute("""
                     CREATE TABLE commits (
-                        ID IDENTITY NOT NULL PRIMARY KEY,
-                        commitId VARCHAR(64), 
+                        id IDENTITY NOT NULL PRIMARY KEY,
+                        commit_id VARCHAR(64), 
                         proj VARCHAR(64), 
                         epoch DATE, 
                         author VARCHAR(64))
                 """);
+
+                s.execute("CREATE INDEX idx_commits_commitId ON COMMITS(commit_id)");
             }
         }
     }
