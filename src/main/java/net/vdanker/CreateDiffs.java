@@ -304,6 +304,8 @@ public class CreateDiffs {
             try (Statement s = connection.createStatement()) {
                 s.execute("DROP TABLE IF EXISTS diffentries");
                 s.execute("DROP INDEX IF EXISTS idx_diffentries_commit1");
+                s.execute("DROP INDEX IF EXISTS idx_diffentries_commit2");
+                s.execute("DROP INDEX IF EXISTS idx_diffentries_commit3");
                 s.execute("""
                     CREATE TABLE diffentries (
                         ID IDENTITY NOT NULL PRIMARY KEY,
@@ -317,6 +319,8 @@ public class CreateDiffs {
                         )
                 """);
                 s.execute("CREATE INDEX idx_diffentries_commit1 ON diffentries(commit1)");
+                s.execute("CREATE INDEX idx_diffentries_commit2 ON diffentries(commit1, filetype)");
+                s.execute("CREATE INDEX idx_diffentries_commit3 ON diffentries(filetype)");
 
                 s.execute("DROP TABLE IF EXISTS diffsedits");
                 s.execute("DROP INDEX IF EXISTS idx_diffsedits_commit");

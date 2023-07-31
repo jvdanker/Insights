@@ -87,13 +87,15 @@ from DIFFSEDITS;
 select proj, epoch, commit_id, delete, insert, replace from (
 select a.proj,
        b.EPOCH, b.commit_id,
-       SUM(CASE WHEN a.edittype = 'DELETE' THEN a.lines END)  as DELETE,
-       SUM(CASE WHEN a.edittype = 'INSERT' THEN a.lines END)  as INSERT,
-       SUM(CASE WHEN a.edittype = 'REPLACE' THEN a.lines END) as REPLACE
+       SUM(CASE WHEN a.edittype = 'DELETE' THEN a.lines ELSE 0 END)  as DELETE,
+       SUM(CASE WHEN a.edittype = 'INSERT' THEN a.lines ELSE 0 END)  as INSERT,
+       SUM(CASE WHEN a.edittype = 'REPLACE' THEN a.lines ELSE 0 END) as REPLACE
 from DIFFSEDITS a
          INNER JOIN commits b ON a.commit = b.commit_id
+        INNER JOIN DIFFENTRIES c ON a.commit = c.COMMIT1
+where c.filetype = 'java'
 group by a.proj, b.EPOCH, b.commit_id) a
-where delete > 0 and insert is null and replace is null
+-- where delete is null and insert > 0 and replace is null
 order by epoch DESC
 ;
 
@@ -110,5 +112,5 @@ where COMMIT = '762cf8b3ce01d6a10d23da4e4d2111b208a6aae1'
 
 select *
 from diffs
-where COMMIT = 'b2ffb4d71c0ad416406f55236b9d683bd540f5e5'
+where COMMIT = '2797418dd389ba1dee39aa3c23e7997bb98a06cd'
 ;
