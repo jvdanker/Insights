@@ -40,7 +40,7 @@ public class WalkAllCommits {
         Path of = Path.of("../bare");
         File[] files = of.toFile().listFiles();
         List<File> list = Arrays.stream(files).filter(File::isDirectory).toList();
-//        list = list.stream().filter(l -> l.getName().equals("eqa-common-security2.git")).toList();
+        // list = list.stream().filter(l -> l.getName().equals("xyz.git")).toList();
 
         list.forEach(l -> {
             System.out.println(l.getName());
@@ -87,14 +87,12 @@ public class WalkAllCommits {
 
         try (Repository repo = GitStreams.fromBareRepository(new File(dir)).getRepository()) {
             Ref head = repo.findRef("HEAD");
-            if (head.getObjectId() == null) return result;
+            if (head == null || head.getObjectId() == null) return result;
 
             try (RevWalk rw = new RevWalk(repo)) {
                 rw.markStart(rw.parseCommit(head.getObjectId()));
 
                 for (RevCommit c : rw) {
-                    if (c.getParentCount() > 1) continue;
-
                     PersonIdent committerIdent = c.getCommitterIdent();
                     String emailAddress = "".equals(committerIdent.getEmailAddress())
                             ? committerIdent.getName()

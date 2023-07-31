@@ -32,7 +32,9 @@ public class CreateDiffs {
         Path of = Path.of("../bare");
         File[] files = of.toFile().listFiles();
         List<File> list = Arrays.stream(files).filter(File::isDirectory).toList();
-        list = list.stream().filter(l -> l.getName().equals("eqa-apps-claims.git")).toList();
+//        list = list.stream().filter(l -> l.getName().equals("test.git")).toList();
+        list = list.stream().filter(l -> l.getName().equals("eqa-apps-exams.git")).toList();
+//        list = list.stream().filter(l -> l.getName().equals("eqa-apps-claims.git")).toList();
 
         list.forEach(l -> {
             System.out.println(l.getName());
@@ -48,8 +50,10 @@ public class CreateDiffs {
     }
 
     private static void saveDiffs(List<DiffEdit> list) {
+//        System.out.println(list);
+//        System.out.println("------------------");
         Map<String, String> diffs = list.stream().collect(
-                Collectors.toMap(DiffEdit::commitId, DiffEdit::diff, (e1, e2) -> e1)
+                Collectors.toMap(DiffEdit::commitId, DiffEdit::diff, (e1, e2) -> e1 + "\n" + e2)
         );
 
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
@@ -261,8 +265,8 @@ public class CreateDiffs {
                             entry.getChangeType().toString(),
                             type));
 
-                    if ("java".equals(type)) {
-                        DiffEdit diffEdit = createDiffEdits(name, repo, c2, entry);
+                    if ("java".equals(type) || "txt".equals(type)) {
+                        DiffEdit diffEdit = createDiffEdits(name, repo, c1, entry);
                         diffEdits.add(diffEdit);
                     }
                 }
