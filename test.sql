@@ -77,36 +77,43 @@ where COMMIT1 = 'd76554b6aa6d2cba1121d0340210916c126fe426'
 
 select b.author, a.*
 from DIFFSEDITS a
-         inner join commits b on a.COMMIT = b.commit_id
+         inner join commits b on a.COMMIT = b.COMMITID
 where COMMIT = 'd76554b6aa6d2cba1121d0340210916c126fe426'
 ;
 
 select distinct edittype
 from DIFFSEDITS;
 
-select proj, epoch, commit_id, delete, insert, replace from (
+select edittype, count(*) count
+from diffsedits
+group by edittype
+order by 1;
+
+select proj, epoch, COMMITID, delete, insert, replace from (
 select a.proj,
-       b.EPOCH, b.commit_id,
+       b.EPOCH, b.COMMITID,
        SUM(CASE WHEN a.edittype = 'DELETE' THEN a.lines ELSE 0 END)  as DELETE,
        SUM(CASE WHEN a.edittype = 'INSERT' THEN a.lines ELSE 0 END)  as INSERT,
        SUM(CASE WHEN a.edittype = 'REPLACE' THEN a.lines ELSE 0 END) as REPLACE
 from DIFFSEDITS a
-         INNER JOIN commits b ON a.commit = b.commit_id
+         INNER JOIN commits b ON a.commit = b.COMMITID
         INNER JOIN DIFFENTRIES c ON a.commit = c.COMMIT1
 where c.filetype = 'java'
-group by a.proj, b.EPOCH, b.commit_id) a
+group by a.proj, b.EPOCH, b.COMMITID) a
 -- where delete is null and insert > 0 and replace is null
 order by epoch DESC
 ;
 
-select * from DIFFSEDITS a inner join commits b on a.commit = b.commit_id;
+select * from DIFFSEDITS a inner join commits b on a.commit = b.COMMITID;
+
+select * from DIFFENTRIES;
 
 select *
 from DIFFENTRIES
 where COMMIT1 = '762cf8b3ce01d6a10d23da4e4d2111b208a6aae1';
 
 select *
-from DIFFSEDITS a INNER JOIN commits b ON a.commit = b.commit_id
+from DIFFSEDITS a INNER JOIN commits b ON a.commit = b.COMMITID
 where COMMIT = '762cf8b3ce01d6a10d23da4e4d2111b208a6aae1'
 ;
 
