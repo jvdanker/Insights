@@ -46,6 +46,7 @@ public class CreateDiffs {
             System.out.println(l.getName());
             String name = l.getName().replaceAll("\\.git", "");
 
+            this.diffEntries.clear();
             getDiffs(name, l.getAbsolutePath());
 
             DbService.saveDiffEntries(this.diffEntries);
