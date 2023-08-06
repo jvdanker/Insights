@@ -28,11 +28,14 @@ public class CreateDiffs {
     public static void main(String[] args) throws ClassNotFoundException, SQLException {
         DbService.createTables(URL);
 
-        Path of = Path.of("../bare");
-        File[] files = of.toFile().listFiles();
-        List<File> list = Arrays.stream(files).filter(File::isDirectory).toList();
-        list = list.stream().filter(l -> l.getName().equals("test.git")).toList();
-//        list = list.stream().filter(l -> l.getName().equals("eqa-apps-exams.git")).toList();
+        File[] files = Path.of("../bare")
+                .toFile()
+                .listFiles();
+
+        List<File> list = Arrays.stream(files)
+                .filter(File::isDirectory)
+                .filter(l -> l.getName().equals("test.git"))
+                .toList();
 
         CreateDiffs app = new CreateDiffs();
         app.scanAndSave(list);
