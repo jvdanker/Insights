@@ -8,8 +8,11 @@ import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.patch.FileHeader;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -36,23 +39,15 @@ public class CreateDiffs {
                 .filter(File::isDirectory)
                 .filter(l -> l.getName().equals("test.git"))
                 .toList();
-
-        CreateDiffs app = new CreateDiffs();
-        app.scanAndSave(list);
     }
 
-    private void scanAndSave(List<File> list) {
-        list.forEach(l -> {
-            System.out.println(l.getName());
-            String name = l.getName().replaceAll("\\.git", "");
+    void scanAndSave(String name, String dir) {
+        this.diffEntries.clear();
+        getDiffs(name, dir);
 
-            this.diffEntries.clear();
-            getDiffs(name, l.getAbsolutePath());
-
-            DbService.saveDiffEntries(this.diffEntries);
-            DbService.saveDiffsEdits(this.diffEntries);
-            DbService.saveDiffs(this.diffEntries);
-        });
+        DbService.saveDiffEntries(this.diffEntries);
+        DbService.saveDiffsEdits(this.diffEntries);
+        DbService.saveDiffs(this.diffEntries);
     }
 
     private void getDiffs(String name, String dir) {
@@ -82,15 +77,8 @@ public class CreateDiffs {
     }
 
     private void calculateDiffEntriesAndEdits(String name, Repository repo, RevCommit c1, RevCommit c2) throws IOException {
-        List<DiffEntry> diffsBetweenTwoTrees =
-                getDiffsBetweenTwoTrees(name, repo, c1, c2);
+        List<DiffEntry> diffsBetweenTwoTrees = getDiffsBetweenTwoTrees(name, repo, c1, c2);
         this.diffEntries.addAll(diffsBetweenTwoTrees);
-
-//        List<DiffEdit> list = diffsBetweenTwoTrees.stream()
-////                .filter(e -> Set.of("java").contains(e.fileType()))
-//                .map(entry -> createDiffEdit(name, repo, c1, entry.entry()))
-//                .toList();
-//        this.diffEdits.addAll(list);
     }
 
     private static List<DiffEntry> getDiffsBetweenTwoTrees(
@@ -130,6 +118,7 @@ public class CreateDiffs {
                             entry.getNewPath(),
                             entry.getChangeType().toString(),
                             type,
+                            getObjectSize(repo, c1, entry),
                             entry,
                             diffEdits));
                 }
@@ -139,6 +128,27 @@ public class CreateDiffs {
         }
 
         return result;
+    }
+
+    private static long getObjectSize(Repository repo, RevCommit c1, org.eclipse.jgit.diff.DiffEntry entry) throws IOException {
+        if (org.eclipse.jgit.diff.DiffEntry.ChangeType.DELETE.equals(entry.getChangeType())) {
+            return -1;
+        }
+
+        final long size;
+        try (TreeWalk treeWalk = new TreeWalk(repo)) {
+            treeWalk.addTree(c1.getTree());
+            treeWalk.setRecursive(true);
+            treeWalk.setFilter(PathFilter.create(entry.getNewPath()));
+            if (!treeWalk.next()) {
+                throw new IllegalStateException("Did not find expected file");
+            }
+
+            ObjectId objectId = treeWalk.getObjectId(0);
+            ObjectLoader loader = repo.open(objectId);
+            size = loader.getSize();
+        }
+        return size;
     }
 
     private static DiffEdits createDiffEdits(
@@ -165,5 +175,34 @@ public class CreateDiffs {
             throw new RuntimeException(e);
         }
     }
+
+//    private static int countLinesOfFileInCommit(Repository repository, ObjectId commitID, String name) throws IOException {
+//        try (RevWalk revWalk = new RevWalk(repository)) {
+//            RevCommit commit = revWalk.parseCommit(commitID);
+//            RevTree tree = commit.getTree();
+//            System.out.println("Having tree: " + tree);
+//
+//            // now try to find a specific file
+//            try (TreeWalk treeWalk = new TreeWalk(repository)) {
+//                treeWalk.addTree(tree);
+//                treeWalk.setRecursive(true);
+//                treeWalk.setFilter(PathFilter.create(name));
+//                if (!treeWalk.next()) {
+//                    throw new IllegalStateException("Did not find expected file 'README.md'");
+//                }
+//
+//                ObjectId objectId = treeWalk.getObjectId(0);
+//                ObjectLoader loader = repository.open(objectId);
+//
+//                // load the content of the file into a stream
+//                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+//                loader.copyTo(stream);
+//
+//                revWalk.dispose();
+//
+//                return IOUtils.readLines(new ByteArrayInputStream(stream.toByteArray()), "UTF-8").size();
+//            }
+//        }
+//    }
 
 }

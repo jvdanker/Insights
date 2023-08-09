@@ -1,22 +1,11 @@
 package net.vdanker;
 
 import net.vdanker.mappers.GitStreams;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.NoHeadException;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.errors.MissingObjectException;
-import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.CanonicalTreeParser;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.h2.tools.Server;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,8 +15,6 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class WalkAllCommits {
@@ -37,20 +24,24 @@ public class WalkAllCommits {
     public static void main(String[] args) throws ClassNotFoundException, SQLException {
         createTable(URL);
 
-        Path of = Path.of("../bare");
-        File[] files = of.toFile().listFiles();
-        List<File> list = Arrays.stream(files).filter(File::isDirectory).toList();
-        // list = list.stream().filter(l -> l.getName().equals("xyz.git")).toList();
+        File[] files = Path.of("../bare")
+                .toFile()
+                .listFiles();
+
+        List<File> list = Arrays.stream(files)
+                .filter(File::isDirectory)
+                .filter(l -> l.getName().equals("test.git"))
+                .toList();
 
         list.forEach(l -> {
             System.out.println(l.getName());
             String name = l.getName().replaceAll("\\.git", "");
 
-            saveCommits(walkRepo(name, l.getAbsolutePath()));
+            saveCommits(collectAllCommits(name, l.getAbsolutePath()));
         });
     }
 
-    private static void saveCommits(List<Commit> list) {
+    static void saveCommits(List<Commit> list) {
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO commits(proj, commit_id, epoch, author) VALUES (?, ?, ?, ?)")) {
@@ -82,7 +73,7 @@ public class WalkAllCommits {
                 .orElse("?");
     }
 
-    private static List<Commit> walkRepo(String name, String dir) {
+    static List<Commit> collectAllCommits(String name, String dir) {
         List<Commit> result = new ArrayList<>();
 
         try (Repository repo = GitStreams.fromBareRepository(new File(dir)).getRepository()) {
@@ -128,7 +119,7 @@ public class WalkAllCommits {
         return email;
     }
 
-    private static void createTable(String url) throws SQLException {
+    static void createTable(String url) throws SQLException {
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (Statement s = connection.createStatement()) {
                 s.execute("DROP TABLE IF EXISTS commits");

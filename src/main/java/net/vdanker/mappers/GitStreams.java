@@ -18,11 +18,9 @@ import java.util.stream.StreamSupport;
 
 public class GitStreams {
 
-    private final File location;
-    private Repository repository;
+    private final Repository repository;
 
     private GitStreams(File location) {
-        this.location = location;
         try {
             repository = openRepository(location);
         } catch (IOException | InvalidRefNameException e) {
@@ -58,8 +56,8 @@ public class GitStreams {
 
     private static Repository openRepository(File location) throws IOException, InvalidRefNameException {
         return new FileRepositoryBuilder()
-                .setGitDir(new File(location, ".git"))
-//                .setGitDir(location)
+//                .setGitDir(new File(location, ".git"))
+                .setGitDir(location)
 //                .setInitialBranch("main")
                 .setBare()
                 .build();

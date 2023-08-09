@@ -22,6 +22,7 @@ public class DbService {
                         changetype VARCHAR(64), 
                         oldpath VARCHAR(512),
                         newpath VARCHAR(512),
+                        size LONG,
                         filetype VARCHAR(64)
                         )
                 """);
@@ -130,7 +131,7 @@ public class DbService {
     static void saveDiffEntries(List<DiffEntry> diffEntries) {
         try (Connection connection = DriverManager.getConnection(CreateDiffs.URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO diffentries(commit1, commit2, proj, oldpath, newpath, changetype, filetype) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                    "INSERT INTO diffentries(commit1, commit2, proj, oldpath, newpath, changetype, size, filetype) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
 
                 diffEntries.forEach(item -> {
                     try {
@@ -140,7 +141,8 @@ public class DbService {
                         ps.setString(4, item.oldPath());
                         ps.setString(5, item.newPath());
                         ps.setString(6, item.type());
-                        ps.setString(7, item.fileType());
+                        ps.setLong(7, item.size());
+                        ps.setString(8, item.fileType());
                         ps.addBatch();
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
