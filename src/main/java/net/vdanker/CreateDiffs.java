@@ -47,7 +47,7 @@ public class CreateDiffs {
 
         DbService.saveDiffEntries(this.diffEntries);
         DbService.saveDiffsEdits(this.diffEntries);
-        DbService.saveDiffs(this.diffEntries);
+//        DbService.saveDiffs(this.diffEntries);
     }
 
     private void getDiffs(String name, String dir) {
@@ -135,7 +135,6 @@ public class CreateDiffs {
             return -1;
         }
 
-        final long size;
         try (TreeWalk treeWalk = new TreeWalk(repo)) {
             treeWalk.addTree(c1.getTree());
             treeWalk.setRecursive(true);
@@ -146,9 +145,8 @@ public class CreateDiffs {
 
             ObjectId objectId = treeWalk.getObjectId(0);
             ObjectLoader loader = repo.open(objectId);
-            size = loader.getSize();
+            return loader.getSize();
         }
-        return size;
     }
 
     private static DiffEdits createDiffEdits(
@@ -175,34 +173,4 @@ public class CreateDiffs {
             throw new RuntimeException(e);
         }
     }
-
-//    private static int countLinesOfFileInCommit(Repository repository, ObjectId commitID, String name) throws IOException {
-//        try (RevWalk revWalk = new RevWalk(repository)) {
-//            RevCommit commit = revWalk.parseCommit(commitID);
-//            RevTree tree = commit.getTree();
-//            System.out.println("Having tree: " + tree);
-//
-//            // now try to find a specific file
-//            try (TreeWalk treeWalk = new TreeWalk(repository)) {
-//                treeWalk.addTree(tree);
-//                treeWalk.setRecursive(true);
-//                treeWalk.setFilter(PathFilter.create(name));
-//                if (!treeWalk.next()) {
-//                    throw new IllegalStateException("Did not find expected file 'README.md'");
-//                }
-//
-//                ObjectId objectId = treeWalk.getObjectId(0);
-//                ObjectLoader loader = repository.open(objectId);
-//
-//                // load the content of the file into a stream
-//                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-//                loader.copyTo(stream);
-//
-//                revWalk.dispose();
-//
-//                return IOUtils.readLines(new ByteArrayInputStream(stream.toByteArray()), "UTF-8").size();
-//            }
-//        }
-//    }
-
 }

@@ -26,7 +26,7 @@ public class CollectFiles {
 
         List<File> list = Arrays.stream(files)
                 .filter(File::isDirectory)
-                .filter(l -> l.getName().equals("eqa-apps-exams.git"))
+//                .filter(l -> l.getName().equals("eqa-apps-exams.git"))
                 .toList();
 
         list.forEach(l -> {
@@ -40,16 +40,18 @@ public class CollectFiles {
     static void saveRepoFiles(List<RepoFile> list) {
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO files(object_id, module, path, filename, extension, size) VALUES (?, ?, ?, ?, ?, ?)")) {
+                    "INSERT INTO files(object_id, project, module, path, filename, fullpath, extension, size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
 
                 list.forEach(item -> {
                     try {
                         ps.setString(1, item.objectId());
-                        ps.setString(2, item.module());
-                        ps.setString(3, item.path());
-                        ps.setString(4, item.filename());
-                        ps.setString(5, item.extension());
-                        ps.setLong(6, item.size());
+                        ps.setString(2, item.project());
+                        ps.setString(3, item.module());
+                        ps.setString(4, item.path());
+                        ps.setString(5, item.filename());
+                        ps.setString(6, item.fullpath());
+                        ps.setString(7, item.extension());
+                        ps.setLong(8, item.size());
                         ps.addBatch();
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -101,9 +103,11 @@ public class CollectFiles {
 
                         result.add(new RepoFile(
                                 objectId.name(),
+                                name,
                                 module,
                                 (parent == null ? "" : parent.toString()),
                                 filename,
+                                (parent == null ? filename : parent.toString() + "/" + filename),
                                 getExtension(filename),
                                 loader.getSize()));
                     }
@@ -126,7 +130,7 @@ public class CollectFiles {
                 .orElse("?");
     }
 
-    record RepoFile(String objectId, String module, String path, String filename, String extension, Long size) {}
+    record RepoFile(String objectId, String project, String module, String path, String filename, String fullpath, String extension, Long size) {}
 
     static void createTable(String url) throws SQLException {
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
@@ -134,20 +138,24 @@ public class CollectFiles {
                 s.execute("DROP TABLE IF EXISTS files");
                 s.execute("DROP INDEX IF EXISTS idx_files_ext");
                 s.execute("DROP INDEX IF EXISTS idx_files_oid");
+                s.execute("DROP INDEX IF EXISTS idx_files_fp");
 
                 s.execute("""
                     CREATE TABLE files (
                         id IDENTITY NOT NULL PRIMARY KEY,
                         object_id VARCHAR(64) NOT NULL,
+                        project VARCHAR(64), 
                         module VARCHAR(64), 
                         path VARCHAR(1024), 
-                        filename VARCHAR(1024), 
+                        filename VARCHAR(1024),
+                        fullpath VARCHAR(1024), 
                         extension VARCHAR(64), 
                         size LONG
                     )""");
 
                 s.execute("CREATE INDEX idx_files_ext ON FILES(extension)");
                 s.execute("CREATE INDEX idx_files_oid ON FILES(object_id)");
+                s.execute("CREATE INDEX idx_files_fp ON FILES(fullpath)");
             }
         }
     }

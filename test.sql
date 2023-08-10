@@ -103,6 +103,23 @@ group by a.proj, b.EPOCH, b.COMMIT_ID) a
 order by epoch DESC
 ;
 
+select epoch, project, avg(size), sum(delete), sum(insert), sum(replace) from (
+select epoch, project, path, filename, max(size) as size,
+       SUM(CASE WHEN a.edittype = 'DELETE' THEN a.lines ELSE 0 END)  as DELETE,
+       SUM(CASE WHEN a.edittype = 'INSERT' THEN a.lines ELSE 0 END)  as INSERT,
+       SUM(CASE WHEN a.edittype = 'REPLACE' THEN a.lines ELSE 0 END) as REPLACE
+from (select c.EPOCH, b.project, b.PATH, b.FILENAME, b.SIZE, d.EDITTYPE, d.LINES
+      from DIFFENTRIES a
+               inner join files b on a.NEWPATH = b.FULLPATH and a.PROJ = b.PROJECT
+               inner join commits c on a.COMMIT1 = c.COMMIT_ID
+               inner join DIFFSEDITS d on a.COMMIT1 = d.COMMIT and a.NEWPATH = d.FILENAME
+      where a.CHANGETYPE = 'MODIFY') a
+group by epoch, project, path, filename
+order by 1 desc, 2, 3)
+group by epoch, project
+order by 1 desc
+;
+
 select * from DIFFSEDITS a inner join commits b on a.commit = b.COMMIT_ID;
 
 select * from DIFFENTRIES;
