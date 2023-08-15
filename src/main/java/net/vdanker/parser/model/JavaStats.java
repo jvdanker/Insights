@@ -5,5 +5,6 @@ import java.util.List;
 public record JavaStats(
         String fqClassName,
         String packageDeclaration,
-        List<JavaImportDeclaration> imports, List<JavaMethod> methods) {
+        List<JavaImportDeclaration> imports,
+        List<JavaMethod> methods) {
 }

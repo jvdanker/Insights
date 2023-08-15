@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static net.vdanker.WalkAllCommits.*;
 
@@ -22,14 +23,14 @@ public class CollectCommits {
 
         List<File> list = Arrays.stream(files)
                 .filter(File::isDirectory)
+//                .filter(l -> l.getName().equals("test.git"))
                 .filter(l -> l.getName().equals("eqa-apps-exams.git"))
+//                .filter(l -> apps.contains(l.getName()))
                 .toList();
 
         list.forEach(l -> {
             System.out.println(l.getName());
             String name = l.getName().replaceAll("\\.git", "");
-
-            saveCommits(collectAllCommits(name, l.getAbsolutePath()));
 
             saveCommits(collectAllCommits(name, l.getAbsolutePath()));
 

@@ -107,7 +107,7 @@ public class CollectFiles {
                                 module,
                                 (parent == null ? "" : parent.toString()),
                                 filename,
-                                (parent == null ? filename : parent.toString() + "/" + filename),
+                                (parent == null ? filename : parent + "/" + filename),
                                 getExtension(filename),
                                 loader.getSize()));
                     }

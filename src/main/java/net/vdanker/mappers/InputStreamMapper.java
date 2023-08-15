@@ -18,7 +18,7 @@ import java.util.List;
 public class InputStreamMapper {
     public static JavaStats toJavaStats(InputStream is) {
         try {
-            return JavaFileParser.parse(is);
+            return JavaFileParser.parse(null, is);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -26,7 +26,8 @@ public class InputStreamMapper {
 
     public static JavaStats toJavaStats(GitTreeObject to) {
         try {
-            return JavaFileParser.parse(to.is());
+            System.out.println(to.objectId() + " " + to.name());
+            return JavaFileParser.parse(to.objectId(), to.is());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

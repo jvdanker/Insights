@@ -33,7 +33,7 @@ public class Main {
         pairStream.forEach(p -> {
             System.out.println(p.fqClassName());
             p.methods().forEach(m -> {
-                System.out.printf("  %s - %d\n", m.name(), m.blockStatements());
+                System.out.printf("  %s - %d\n", m.methodName(), m.blockStatements());
 
                 m.methodCalls().forEach(mc -> System.out.printf("    %s\n", mc));
             });

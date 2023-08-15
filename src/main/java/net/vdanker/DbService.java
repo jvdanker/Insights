@@ -32,11 +32,13 @@ public class DbService {
 
                 s.execute("DROP TABLE IF EXISTS diffsedits");
                 s.execute("DROP INDEX IF EXISTS idx_diffsedits_commit");
+                s.execute("DROP INDEX IF EXISTS idx_diffsedits_fileid");
                 s.execute("""
                     CREATE TABLE diffsedits (
                         ID IDENTITY NOT NULL PRIMARY KEY,
                         commit VARCHAR(64) NOT NULL,
                         proj VARCHAR(64) NOT NULL,
+                        fileId VARCHAR(64) NOT NULL,
                         filename VARCHAR(256) NOT NULL,
                         editType VARCHAR(64), 
                         lines INT,
@@ -49,6 +51,7 @@ public class DbService {
                         )
                 """);
                 s.execute("CREATE INDEX idx_diffsedits_commit ON diffsedits(commit)");
+                s.execute("CREATE INDEX idx_diffsedits_fileid ON diffsedits(fileId)");
 
                 s.execute("DROP TABLE IF EXISTS diffs");
                 s.execute("DROP INDEX IF EXISTS idx_diffs_commit");
@@ -95,7 +98,7 @@ public class DbService {
     static void saveDiffsEdits(List<DiffEntry> diffEntries) {
         try (Connection connection = DriverManager.getConnection(CreateDiffs.URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO diffsedits(proj, commit, filename, editType, lines, linesFrom, linesTo, beginA, endA, beginB, endB) VALUES (?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)")) {
+                    "INSERT INTO diffsedits(proj, commit, fileId, filename, editType, lines, linesFrom, linesTo, beginA, endA, beginB, endB) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)")) {
 
                 diffEntries.stream()
                         .map(DiffEntry::diffEdits)
@@ -113,15 +116,16 @@ public class DbService {
         try {
             ps.setString(1, item.project());
             ps.setString(2, item.commitId());
-            ps.setString(3, item.filename());
-            ps.setString(4, item.type());
-            ps.setInt(5, item.lines());
-            ps.setInt(6, item.linesFrom());
-            ps.setInt(7, item.linesTo());
-            ps.setInt(8, item.beginA());
-            ps.setInt(9, item.endA());
-            ps.setInt(10, item.beginB());
-            ps.setInt(11, item.endB());
+            ps.setString(3, item.fileId());
+            ps.setString(4, item.filename());
+            ps.setString(5, item.type());
+            ps.setInt(6, item.lines());
+            ps.setInt(7, item.linesFrom());
+            ps.setInt(8, item.linesTo());
+            ps.setInt(9, item.beginA());
+            ps.setInt(10, item.endA());
+            ps.setInt(11, item.beginB());
+            ps.setInt(12, item.endB());
             ps.addBatch();
         } catch (SQLException e) {
             throw new RuntimeException(e);

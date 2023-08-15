@@ -166,6 +166,7 @@ public class CreateDiffs {
             return new DiffEdits(
                     name,
                     commit.getId().getName(),
+                    entry.getNewId().name(),
                     entry.getNewPath(),
                     fileHeader.toEditList(),
                     bos.toString());

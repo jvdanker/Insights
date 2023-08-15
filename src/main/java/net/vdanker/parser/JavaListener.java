@@ -1,6 +1,6 @@
 package net.vdanker.parser;
 
-import com.ibm.icu.impl.StringRange;
+import org.eclipse.jgit.lib.ObjectId;
 import parsers.JavaParser;
 import net.vdanker.parser.model.FormalParameter;
 import net.vdanker.parser.model.JavaImportDeclaration;
@@ -8,7 +8,6 @@ import net.vdanker.parser.model.JavaMethod;
 import net.vdanker.parser.model.JavaStats;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.TokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 import java.util.ArrayList;
@@ -16,6 +15,7 @@ import java.util.List;
 
 public class JavaListener extends parsers.JavaParserBaseListener implements ParseTreeListener {
     final Parser parser;
+    private final ObjectId objectId;
     String packageDeclaration;
     String className;
 
@@ -27,9 +27,11 @@ public class JavaListener extends parsers.JavaParserBaseListener implements Pars
     private List<FormalParameter> formalParametersList;
     private int complexity;
     private int localVariableDeclarations;
+    private int methodStart;
 
-    public JavaListener(Parser parser) {
+    public JavaListener(ObjectId objectId, Parser parser) {
         this.parser = parser;
+        this.objectId = objectId;
     }
 
     JavaStats getStats() {
@@ -60,19 +62,25 @@ public class JavaListener extends parsers.JavaParserBaseListener implements Pars
         this.blockStatements = 0;
         this.complexity = 1;
         this.localVariableDeclarations = 0;
+        this.methodStart = ctx.start.getLine();
         this.methodCalls = new ArrayList<>();
     }
 
     public void exitMethodDeclaration(JavaParser.MethodDeclarationContext ctx) {
         String identifier = ctx.identifier().getText();
         var method = new JavaMethod(
-                String.format("%s.%s.%s", this.packageDeclaration, this.className, identifier),
+                this.objectId,
+                this.packageDeclaration,
+                this.className,
                 identifier,
+                String.format("%s.%s.%s", this.packageDeclaration, this.className, identifier),
                 this.formalParametersList,
                 this.blockStatements,
                 this.methodCalls,
                 this.complexity,
-                this.localVariableDeclarations);
+                this.localVariableDeclarations,
+                this.methodStart,
+                ctx.stop.getLine());
         this.methods.add(method);
 
         this.methodCalls = null;

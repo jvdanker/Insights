@@ -1,6 +1,7 @@
 package net.vdanker.parser;
 
 import net.vdanker.parser.model.JavaStats;
+import org.eclipse.jgit.lib.ObjectId;
 import parsers.JavaLexer;
 import parsers.JavaParser;
 import org.antlr.v4.runtime.CharStreams;
@@ -11,7 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class JavaFileParser {
-    public static JavaStats parse(InputStream is) throws IOException {
+    public static JavaStats parse(ObjectId objectId, InputStream is) throws IOException {
         var charStream = CharStreams.fromStream(is);
 
         var lexer = new JavaLexer(charStream);
@@ -19,7 +20,7 @@ public class JavaFileParser {
         var parser = new JavaParser(tokens);
 
         var tree = parser.compilationUnit();
-        var listener = new JavaListener(parser);
+        var listener = new JavaListener(objectId, parser);
 
         var walker = new ParseTreeWalker();
         walker.walk(listener, tree);
