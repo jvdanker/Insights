@@ -41,7 +41,16 @@ public class Query {
                     String className = resultSet.getString(4);
                     String methodName = resultSet.getString(5);
                     int statements = resultSet.getInt(6);
-                    entries.add(new Entry(packageName, className, methodName, statements));
+                    int complexity = resultSet.getInt(7);
+                    entries.add(
+                            new Entry(
+                                    packageName,
+                                    className,
+                                    methodName,
+                                    statements,
+                                    complexity
+                            )
+                    );
                 }
 
                 Tree tree = new Tree("root", -1, new HashMap<>());
@@ -49,12 +58,13 @@ public class Query {
 
 //                System.out.println(tree);
 
-                String fileName = "/Users/juan/Downloads/treemap-stratify/files/data.csv";
+                String fileName = "treemap-stratify/files/data.csv";
                 BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
                 writer.write("name,size\n");
 
                 entries.stream()
-                        .filter(e -> e.statements > 1)
+//                        .filter(e -> e.statements > 10)
+                        .filter(e -> e.complexity > 10)
                         .map(Query::permutationsOf)
                         .flatMap(Collection::stream)
                         .collect(Collectors.toSet())
@@ -161,6 +171,6 @@ public class Query {
             String packageName,
             String className,
             String methodName,
-            int statements) {}
+            int statements, int complexity) {}
 
 }
