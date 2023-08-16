@@ -11,24 +11,21 @@ public class DbService {
             try (Statement s = connection.createStatement()) {
                 s.execute("DROP TABLE IF EXISTS diffentries");
                 s.execute("DROP INDEX IF EXISTS idx_diffentries_commit1");
-                s.execute("DROP INDEX IF EXISTS idx_diffentries_commit2");
-                s.execute("DROP INDEX IF EXISTS idx_diffentries_commit3");
+//                s.execute("DROP INDEX IF EXISTS idx_diffentries_commit2");
+//                s.execute("DROP INDEX IF EXISTS idx_diffentries_commit3");
                 s.execute("""
                     CREATE TABLE diffentries (
                         ID IDENTITY NOT NULL PRIMARY KEY,
                         commit1 VARCHAR(64) NOT NULL,
                         commit2 VARCHAR(64) NOT NULL,
-                        proj VARCHAR(64) NOT NULL,
-                        changetype VARCHAR(64), 
-                        oldpath VARCHAR(512),
-                        newpath VARCHAR(512),
-                        size LONG,
-                        filetype VARCHAR(64)
+                        oldId VARCHAR(64) NOT NULL,
+                        newId VARCHAR(64) NOT NULL,
+                        changetype VARCHAR(64)
                         )
                 """);
                 s.execute("CREATE INDEX idx_diffentries_commit1 ON diffentries(commit1)");
-                s.execute("CREATE INDEX idx_diffentries_commit2 ON diffentries(commit1, filetype)");
-                s.execute("CREATE INDEX idx_diffentries_commit3 ON diffentries(filetype)");
+//                s.execute("CREATE INDEX idx_diffentries_commit2 ON diffentries(commit1, filetype)");
+//                s.execute("CREATE INDEX idx_diffentries_commit3 ON diffentries(filetype)");
 
                 s.execute("DROP TABLE IF EXISTS diffsedits");
                 s.execute("DROP INDEX IF EXISTS idx_diffsedits_commit");
@@ -37,9 +34,7 @@ public class DbService {
                     CREATE TABLE diffsedits (
                         ID IDENTITY NOT NULL PRIMARY KEY,
                         commit VARCHAR(64) NOT NULL,
-                        proj VARCHAR(64) NOT NULL,
                         fileId VARCHAR(64) NOT NULL,
-                        filename VARCHAR(256) NOT NULL,
                         editType VARCHAR(64), 
                         lines INT,
                         linesFrom INT,
@@ -98,7 +93,9 @@ public class DbService {
     static void saveDiffsEdits(List<DiffEntry> diffEntries) {
         try (Connection connection = DriverManager.getConnection(CreateDiffs.URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO diffsedits(proj, commit, fileId, filename, editType, lines, linesFrom, linesTo, beginA, endA, beginB, endB) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)")) {
+                    "INSERT INTO diffsedits(" +
+                            "commit, fileId, editType, lines, linesFrom, linesTo, beginA, endA, beginB, endB) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ? ,?, ?, ?)")) {
 
                 diffEntries.stream()
                         .map(DiffEntry::diffEdits)
@@ -114,18 +111,16 @@ public class DbService {
 
     private static void addDiffEditToBatch(PreparedStatement ps, DiffEdit item) {
         try {
-            ps.setString(1, item.project());
-            ps.setString(2, item.commitId());
-            ps.setString(3, item.fileId());
-            ps.setString(4, item.filename());
-            ps.setString(5, item.type());
-            ps.setInt(6, item.lines());
-            ps.setInt(7, item.linesFrom());
-            ps.setInt(8, item.linesTo());
-            ps.setInt(9, item.beginA());
-            ps.setInt(10, item.endA());
-            ps.setInt(11, item.beginB());
-            ps.setInt(12, item.endB());
+            ps.setString(1, item.commitId());
+            ps.setString(2, item.fileId());
+            ps.setString(3, item.changeType());
+            ps.setInt(4, item.lines());
+            ps.setInt(5, item.linesFrom());
+            ps.setInt(6, item.linesTo());
+            ps.setInt(7, item.beginA());
+            ps.setInt(8, item.endA());
+            ps.setInt(9, item.beginB());
+            ps.setInt(10, item.endB());
             ps.addBatch();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -135,18 +130,17 @@ public class DbService {
     static void saveDiffEntries(List<DiffEntry> diffEntries) {
         try (Connection connection = DriverManager.getConnection(CreateDiffs.URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO diffentries(commit1, commit2, proj, oldpath, newpath, changetype, size, filetype) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    "INSERT INTO diffentries(" +
+                            "commit1, commit2, oldId, newId, changetype) " +
+                            "VALUES (?, ?, ?, ?, ?)")) {
 
                 diffEntries.forEach(item -> {
                     try {
                         ps.setString(1, item.commit1Id());
                         ps.setString(2, item.commit2Id());
-                        ps.setString(3, item.proj());
-                        ps.setString(4, item.oldPath());
-                        ps.setString(5, item.newPath());
-                        ps.setString(6, item.type());
-                        ps.setLong(7, item.size());
-                        ps.setString(8, item.fileType());
+                        ps.setString(3, item.oldId());
+                        ps.setString(4, item.newId());
+                        ps.setString(5, item.changeType());
                         ps.addBatch();
                     } catch (SQLException e) {
                         throw new RuntimeException(e);

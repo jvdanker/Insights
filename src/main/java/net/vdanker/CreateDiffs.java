@@ -106,19 +106,14 @@ public class CreateDiffs {
                         .call();
 
                 for (org.eclipse.jgit.diff.DiffEntry entry : diffs) {
-                    String type = getExtension(entry.getNewPath());
-
                     DiffEdits diffEdits = createDiffEdits(name, repo, c1, entry);
 
                     result.add(new DiffEntry(
                             c1.getId().getName(),
                             c2 == null ? "" : c2.getId().getName(),
-                            name,
-                            entry.getOldPath(),
-                            entry.getNewPath(),
+                            entry.getOldId().name(),
+                            entry.getNewId().name(),
                             entry.getChangeType().toString(),
-                            type,
-                            getObjectSize(repo, c1, entry),
                             entry,
                             diffEdits));
                 }
@@ -164,10 +159,8 @@ public class CreateDiffs {
 
             FileHeader fileHeader = df.toFileHeader(entry);
             return new DiffEdits(
-                    name,
                     commit.getId().getName(),
                     entry.getNewId().name(),
-                    entry.getNewPath(),
                     fileHeader.toEditList(),
                     bos.toString());
         } catch (IOException e) {

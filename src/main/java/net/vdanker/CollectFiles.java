@@ -18,7 +18,7 @@ public class CollectFiles {
     static String URL = "jdbc:h2:tcp://localhost:9092/./test";
 
     public static void main(String[] args) throws ClassNotFoundException, SQLException {
-        createTable(URL);
+        createTables(URL);
 
         File[] files = Path.of("../bare")
                 .toFile()
@@ -132,7 +132,7 @@ public class CollectFiles {
 
     record RepoFile(String objectId, String project, String module, String path, String filename, String fullpath, String extension, Long size) {}
 
-    static void createTable(String url) throws SQLException {
+    static void createTables(String url) throws SQLException {
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (Statement s = connection.createStatement()) {
                 s.execute("DROP TABLE IF EXISTS files");

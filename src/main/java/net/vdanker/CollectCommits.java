@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import static net.vdanker.CollectFiles.collectAllFiles;
+import static net.vdanker.CollectFiles.saveRepoFiles;
 import static net.vdanker.WalkAllCommits.*;
 
 public class CollectCommits {
@@ -16,6 +18,7 @@ public class CollectCommits {
     public static void main(String[] args) throws ClassNotFoundException, SQLException {
         WalkAllCommits.createTable(URL);
         DbService.createTables(URL);
+        CollectFiles.createTables(URL);
 
         File[] files = Path.of("../bare")
                 .toFile()
@@ -32,10 +35,17 @@ public class CollectCommits {
             System.out.println(l.getName());
             String name = l.getName().replaceAll("\\.git", "");
 
+            System.out.println("Collecting commits...");
             saveCommits(collectAllCommits(name, l.getAbsolutePath()));
 
+            System.out.println("Collecting files...");
+            saveRepoFiles(collectAllFiles(name, l.getAbsolutePath()));
+
+            System.out.println("Collecting diffs...");
             CreateDiffs app = new CreateDiffs();
             app.scanAndSave(name, l.getAbsolutePath());
+
+            System.out.println("Done.");
         });
     }
 }

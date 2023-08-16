@@ -221,7 +221,8 @@ select OBJECT_ID
      , COMPLEXITY
      , STATEMENTS
      , COUNT(*)
-FROM (select f.OBJECT_ID
+FROM (select e.COMMIT
+           , f.OBJECT_ID
            , f.PROJECT
            , f.MODULE
            , m.CLASS
@@ -240,7 +241,6 @@ FROM (select f.OBJECT_ID
 GROUP BY OBJECT_ID, PROJECT, MODULE, CLASS, METHOD, COMPLEXITY, STATEMENTS
 HAVING COUNT(*) > 1
 ;
-
 
 select f.OBJECT_ID
      , f.PROJECT
@@ -264,3 +264,29 @@ WHERE CASE
           WHEN e.EDITTYPE = 'DELETE' THEN m.LINESTART <= e.BEGINA and m.LINEEND >= e.ENDA
           WHEN e.EDITTYPE = 'REPLACE' THEN m.LINESTART <= e.BEGINA and m.LINEEND >= e.ENDA
           END = true;
+
+select de.proj, f.SIZE
+, f.FULLPATH, f.FILENAME
+from DIFFENTRIES de
+inner join files f on de.NEWID = f.OBJECT_ID;
+
+select c.proj
+     , c.epoch
+     , f.MODULE
+     , m.CLASS
+     , m.METHOD
+     , m.COMPLEXITY
+     , m.STATEMENTS
+     , e.EDITTYPE
+from files f
+         inner join diffsedits e on f.OBJECT_ID = e.FILEID
+         inner join methods m on e.FILEID = m.FILE_ID
+         inner join commits c on e.COMMIT = c.COMMIT_ID
+WHERE CASE
+          WHEN e.EDITTYPE = 'INSERT' THEN m.LINESTART > e.BEGINB and m.LINEEND < e.ENDB
+          WHEN e.EDITTYPE = 'DELETE' THEN m.LINESTART <= e.BEGINA and m.LINEEND >= e.ENDA
+          WHEN e.EDITTYPE = 'REPLACE' THEN m.LINESTART <= e.BEGINA and m.LINEEND >= e.ENDA
+          END = true
+   and m.COMPLEXITY > 1
+order by 1,2 desc,3,4,5;
+
