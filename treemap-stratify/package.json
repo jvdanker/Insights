@@ -1,0 +1,14 @@
+{
+  "name": "@d3/treemap-stratify",
+  "main": "ba9cefa8980c3e16@291.js",
+  "version": "291.0.0",
+  "homepage": "https://observablehq.com/@d3/treemap-stratify",
+  "author": {
+    "name": "D3",
+    "url": "https://observablehq.com/@d3"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}
