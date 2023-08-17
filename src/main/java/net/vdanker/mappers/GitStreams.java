@@ -38,6 +38,9 @@ public class GitStreams {
 
             // a RevWalk allows to walk over commits based on some filtering that is defined
             try (RevWalk walk = new RevWalk(repository)) {
+                if (head == null) {
+                    return Stream.empty();
+                }
                 RevCommit commit = walk.parseCommit(head.getObjectId());
 //                System.out.println("Start-Commit: " + commit);
 //                System.out.println("Commit-Message: " + commit.getFullMessage());

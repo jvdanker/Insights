@@ -26,7 +26,7 @@ public class InputStreamMapper {
 
     public static JavaStats toJavaStats(GitTreeObject to) {
         try {
-            System.out.println(to.objectId() + " " + to.name());
+//            System.out.println(to.objectId() + " " + to.name());
             return JavaFileParser.parse(to.objectId(), to.is());
         } catch (IOException e) {
             throw new RuntimeException(e);

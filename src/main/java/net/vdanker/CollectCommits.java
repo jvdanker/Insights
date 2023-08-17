@@ -1,6 +1,7 @@
 package net.vdanker;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -19,6 +20,24 @@ public class CollectCommits {
         WalkAllCommits.createTable(URL);
         DbService.createTables(URL);
         CollectFiles.createTables(URL);
+        MethodStats.createTable(URL);
+
+        Set<String> apps = Set.of(
+                "eqa-apps-sper.git",
+                "eqa-apps-contacts.git",
+                "eqa-apps-edorg.git",
+                "eqa-apps-qual.git",
+                "eqa-apps-exams.git",
+                "eqa-web-common.git",
+                "eqa-web-common-definitions.git",
+                "eqa-web-secure.git",
+                "eqa-web-intranet.git",
+                "eqa-web-public-templates.git",
+                "eqa-web-learner-extranet.git",
+                "eqa-database-mssql-eqadb.git",
+                "programme-completion-service.git",
+                "aws-marks-integration.git",
+                "sqr.git");
 
         File[] files = Path.of("../bare")
                 .toFile()
@@ -27,7 +46,7 @@ public class CollectCommits {
         List<File> list = Arrays.stream(files)
                 .filter(File::isDirectory)
 //                .filter(l -> l.getName().equals("test.git"))
-                .filter(l -> l.getName().equals("eqa-apps-exams.git"))
+//                .filter(l -> l.getName().equals("eqa-apps-exams.git"))
 //                .filter(l -> apps.contains(l.getName()))
                 .toList();
 
@@ -45,7 +64,13 @@ public class CollectCommits {
             CreateDiffs app = new CreateDiffs();
             app.scanAndSave(name, l.getAbsolutePath());
 
+            System.out.println("Collection method stats...");
+            MethodStats.collectAndSave(l.getAbsolutePath());
+
             System.out.println("Done.");
         });
+
+        System.out.println("Generating data...");
+        Query.generateAndSave();
     }
 }

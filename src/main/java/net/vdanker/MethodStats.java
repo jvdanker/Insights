@@ -4,28 +4,26 @@ import net.vdanker.mappers.GitStreams;
 import net.vdanker.mappers.InputStreamMapper;
 import net.vdanker.parser.model.JavaMethod;
 import net.vdanker.parser.model.JavaStats;
+import org.eclipse.jgit.lib.Repository;
 
 import java.io.File;
 import java.sql.*;
 import java.util.*;
 
-import static java.util.stream.Collectors.*;
-
 public class MethodStats {
 
     static String URL = "jdbc:h2:tcp://localhost:9092/./test";
 
-    public static void main(String[] args) throws SQLException {
-        createTable(URL);
-
-        var methods = GitStreams.fromBareRepository(new File("../bare/eqa-apps-exams.git"))
+    public static void collectAndSave(String dir) {
+        var methods = GitStreams.fromBareRepository(new File(dir))
                 .streamTreeObjects()
                 .filter(t -> t.name().endsWith(".java"))
                 .filter(t -> !t.path().contains("/test/"))
                 .map(InputStreamMapper::toJavaStats)
                 .map(JavaStats::methods)
                 .flatMap(Collection::stream)
-                .filter(e -> !e.methodName().startsWith("get") && !e.methodName().startsWith("set"))
+                .filter(e -> !e.methodName().startsWith("get"))
+                .filter(e -> !e.methodName().startsWith("set"))
                 .toList();
 
         saveMethods(methods);

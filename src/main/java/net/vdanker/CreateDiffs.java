@@ -53,7 +53,7 @@ public class CreateDiffs {
     private void getDiffs(String name, String dir) {
         try (Repository repo = GitStreams.fromBareRepository(new File(dir)).getRepository()) {
             Ref head = repo.findRef(Constants.HEAD); //"refs/heads/main");
-            if (head.getObjectId() == null) return;
+            if (head == null || head.getObjectId() == null) return;
 
             try (RevWalk rw = new RevWalk(repo)) {
                 rw.setRetainBody(false);

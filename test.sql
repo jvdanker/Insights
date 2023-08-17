@@ -290,3 +290,42 @@ WHERE CASE
    and m.COMPLEXITY > 1
 order by 1,2 desc,3,4,5;
 
+
+
+select package
+    , class
+    , method
+    , statements
+    , complexity
+    , f.PROJECT
+  from methods m
+inner join files f on m.FILE_ID = f.OBJECT_ID
+where not method in ('equals', 'hashCode') and COMPLEXITY > 100;
+
+
+select f.PROJECT, count(m.METHOD), sum(m.STATEMENTS)
+from methods m
+         inner join files f on m.FILE_ID = f.OBJECT_ID
+group by f.project
+order by 2 desc;
+
+select m.statements, avg(m.complexity), count(*)
+from METHODS m
+group by m.statements
+having count(*) > 2
+order by 1 desc;
+
+select class, count(distinct FILE_ID)
+from METHODS
+group by class
+having count(distinct file_id) > 1
+order by 2 desc;
+
+select m.STATEMENTS, count(de.COMMIT) as count
+from DIFFSEDITS de
+inner join METHODS m on de.FILEID = m.FILE_ID
+where de.BEGINA >= m.LINESTART and de.ENDA <= m.LINEEND
+group by m.STATEMENTS
+order by 1 desc;
+
+select count(distinct commit) from DIFFSEDITS;

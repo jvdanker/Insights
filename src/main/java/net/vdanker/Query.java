@@ -15,7 +15,10 @@ public class Query {
         List<String> result = new ArrayList<>();
 
         StringBuilder buf = new StringBuilder();
-        StringTokenizer st = new StringTokenizer(String.format("%s.%s", e.packageName, e.className), ".");
+        StringTokenizer st = new StringTokenizer(
+                String.format("%s.%s", e.packageName, e.className),
+                ".");
+
         while (st.hasMoreTokens()) {
             if (!buf.isEmpty()) {
                 buf.append(".");
@@ -26,29 +29,72 @@ public class Query {
             result.add(buf.toString());
         }
 
-        result.add(String.format("%s.%s.%s,%d", e.packageName, e.className, e.methodName, e.statements));
+        result.add(
+                String.format("%s.%s.%s,%d,%d,%s,%s,%d",
+                        e.packageName,
+                        e.className,
+                        e.methodName,
+                        e.statements,
+                        e.complexity,
+                        e.project,
+                        e.fullPath,
+                        e.lineStart)
+        );
+
         return result;
     }
 
-    public static void main(String[] args) throws ClassNotFoundException, SQLException {
+    public static void main(String[] args) {
+        generateAndSave();
+    }
+
+    public static void generateAndSave() {
+        try {
+            generate();
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static void generate() throws ClassNotFoundException, SQLException {
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
-            try (PreparedStatement s = connection.prepareStatement("SELECT * FROM methods")) {
+            try (PreparedStatement s = connection.prepareStatement(
+                    "select package" +
+                            "    , class" +
+                            "    , method" +
+                            "    , statements" +
+                            "    , complexity" +
+                            "    , f.PROJECT" +
+                            "    , f.FULLPATH" +
+                            "    , m.LINESTART" +
+                            "  from methods m " +
+                            "inner join files f on m.FILE_ID = f.OBJECT_ID " +
+                            "where not method in ('equals', 'hashCode')")) {
                 ResultSet resultSet = s.executeQuery();
 
                 List<Entry> entries = new ArrayList<>();
                 while (resultSet.next()) {
-                    String packageName = resultSet.getString(3);
-                    String className = resultSet.getString(4);
-                    String methodName = resultSet.getString(5);
-                    int statements = resultSet.getInt(6);
-                    int complexity = resultSet.getInt(7);
+                    String packageName = resultSet.getString(1);
+                    String className = resultSet.getString(2);
+                    String methodName = resultSet.getString(3);
+                    int statements = resultSet.getInt(4);
+                    int complexity = resultSet.getInt(5);
+                    String project = resultSet.getString(6);
+                    String fullPath = resultSet.getString(7);
+                    int lineStart = resultSet.getInt(8);
+
                     entries.add(
                             new Entry(
+                                    project,
                                     packageName,
                                     className,
                                     methodName,
                                     statements,
-                                    complexity
+                                    complexity,
+                                    fullPath,
+                                    lineStart
                             )
                     );
                 }
@@ -60,11 +106,15 @@ public class Query {
 
                 String fileName = "treemap-stratify/files/data.csv";
                 BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-                writer.write("name,size\n");
+                writer.write("name,size,complexity,project,fullPath,lineStart\n");
 
                 entries.stream()
-//                        .filter(e -> e.statements > 10)
-                        .filter(e -> e.complexity > 10)
+//                        .filter(e -> e.statements == 1)
+//                        .filter(e -> !e.methodName.startsWith("is"))
+//                        .filter(e -> !e.methodName.startsWith("set"))
+//                        .filter(e -> !e.methodName.startsWith("get"))
+//                        .filter(e -> e.statements > 50)
+//                        .filter(e -> e.complexity > 20)
                         .map(Query::permutationsOf)
                         .flatMap(Collection::stream)
                         .collect(Collectors.toSet())
@@ -77,21 +127,7 @@ public class Query {
                             }
                         });
 
-//                entries.forEach(e -> {
-//                    try {
-//                        int size = e.statements;
-//                        writer.write(String.format("%s.%s.%s,%d\n", e.packageName, e.className, e.methodName, size));
-//                    } catch (IOException ex) {
-//                        throw new RuntimeException(ex);
-//                    }
-//                });
-
                 writer.close();
-
-//                String fileName = "/Users/juan/Downloads/pack_2/files/data.json";
-//                BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-//                printTree(writer, tree);
-//                writer.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -168,9 +204,15 @@ public class Query {
 
 
     record Entry(
+            String project,
             String packageName,
             String className,
             String methodName,
-            int statements, int complexity) {}
+            int statements,
+            int complexity,
+            String fullPath,
+            int lineStart) {
+
+    }
 
 }
