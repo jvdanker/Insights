@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.*;
+import java.sql.Date;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,7 +31,7 @@ public class Query {
         }
 
         result.add(
-                String.format("%s.%s.%s,%d,%d,%s,%s,%d",
+                String.format("%s.%s.%s,%d,%d,%s,%s,%d,%s",
                         e.packageName,
                         e.className,
                         e.methodName,
@@ -38,7 +39,9 @@ public class Query {
                         e.complexity,
                         e.project,
                         e.fullPath,
-                        e.lineStart)
+                        e.lineStart,
+                        e.epoch
+                )
         );
 
         return result;
@@ -50,7 +53,8 @@ public class Query {
 
     public static void generateAndSave() {
         try {
-            generate();
+            generateData();
+            generateProjects();
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         } catch (SQLException e) {
@@ -58,20 +62,24 @@ public class Query {
         }
     }
 
-    static void generate() throws ClassNotFoundException, SQLException {
+    static void generateData() throws ClassNotFoundException, SQLException {
         try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
             try (PreparedStatement s = connection.prepareStatement(
-                    "select package" +
-                            "    , class" +
-                            "    , method" +
-                            "    , statements" +
-                            "    , complexity" +
-                            "    , f.PROJECT" +
-                            "    , f.FULLPATH" +
-                            "    , m.LINESTART" +
-                            "  from methods m " +
-                            "inner join files f on m.FILE_ID = f.OBJECT_ID " +
-                            "where not method in ('equals', 'hashCode')")) {
+                    """
+                        select package
+                            , class
+                            , method
+                            , statements
+                            , complexity
+                            , f.PROJECT
+                            , f.FULLPATH
+                            , m.LINESTART
+                            , c.EPOCH
+                          from methods m
+                        inner join files f on m.FILE_ID = f.OBJECT_ID
+                        inner join DIFFENTRIES de on f.OBJECT_ID = de.NEWID
+                        inner join COMMITS c on de.COMMIT1 = c.COMMIT_ID
+                        """)) {
                 ResultSet resultSet = s.executeQuery();
 
                 List<Entry> entries = new ArrayList<>();
@@ -84,6 +92,7 @@ public class Query {
                     String project = resultSet.getString(6);
                     String fullPath = resultSet.getString(7);
                     int lineStart = resultSet.getInt(8);
+                    Date epoch = resultSet.getDate(9);
 
                     entries.add(
                             new Entry(
@@ -94,7 +103,8 @@ public class Query {
                                     statements,
                                     complexity,
                                     fullPath,
-                                    lineStart
+                                    lineStart,
+                                    epoch
                             )
                     );
                 }
@@ -106,15 +116,9 @@ public class Query {
 
                 String fileName = "treemap-stratify/files/data.csv";
                 BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-                writer.write("name,size,complexity,project,fullPath,lineStart\n");
+                writer.write("name,size,complexity,project,fullPath,lineStart,epoch\n");
 
                 entries.stream()
-//                        .filter(e -> e.statements == 1)
-//                        .filter(e -> !e.methodName.startsWith("is"))
-//                        .filter(e -> !e.methodName.startsWith("set"))
-//                        .filter(e -> !e.methodName.startsWith("get"))
-//                        .filter(e -> e.statements > 50)
-//                        .filter(e -> e.complexity > 20)
                         .map(Query::permutationsOf)
                         .flatMap(Collection::stream)
                         .collect(Collectors.toSet())
@@ -126,6 +130,28 @@ public class Query {
                                 throw new RuntimeException(e);
                             }
                         });
+
+                writer.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    static void generateProjects() throws ClassNotFoundException, SQLException {
+        try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
+            try (PreparedStatement s = connection.prepareStatement(
+                    "select distinct project from files order by project")) {
+                ResultSet resultSet = s.executeQuery();
+
+                String fileName = "treemap-stratify/files/projects.csv";
+                BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+                writer.write("name\n");
+
+                while (resultSet.next()) {
+                    String project = resultSet.getString(1);
+                    writer.write(String.format("%s,\n", project));
+                }
 
                 writer.close();
             } catch (IOException e) {
@@ -211,7 +237,7 @@ public class Query {
             int statements,
             int complexity,
             String fullPath,
-            int lineStart) {
+            int lineStart, Date epoch) {
 
     }
 

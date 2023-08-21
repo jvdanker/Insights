@@ -20,6 +20,8 @@ public class DbService {
                         commit2 VARCHAR(64) NOT NULL,
                         oldId VARCHAR(64) NOT NULL,
                         newId VARCHAR(64) NOT NULL,
+                        project VARCHAR(64) NOT NULL,
+                        fullPath VARCHAR(1024) NOT NULL,
                         changetype VARCHAR(64)
                         )
                 """);
@@ -35,6 +37,8 @@ public class DbService {
                         ID IDENTITY NOT NULL PRIMARY KEY,
                         commit VARCHAR(64) NOT NULL,
                         fileId VARCHAR(64) NOT NULL,
+                        project VARCHAR(64) NOT NULL,
+                        fullPath VARCHAR(256) NOT NULL,
                         editType VARCHAR(64), 
                         lines INT,
                         linesFrom INT,
@@ -94,8 +98,8 @@ public class DbService {
         try (Connection connection = DriverManager.getConnection(CreateDiffs.URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO diffsedits(" +
-                            "commit, fileId, editType, lines, linesFrom, linesTo, beginA, endA, beginB, endB) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ? ,?, ?, ?)")) {
+                            "commit, fileId, project, fullpath, editType, lines, linesFrom, linesTo, beginA, endA, beginB, endB) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)")) {
 
                 diffEntries.stream()
                         .map(DiffEntry::diffEdits)
@@ -113,14 +117,16 @@ public class DbService {
         try {
             ps.setString(1, item.commitId());
             ps.setString(2, item.fileId());
-            ps.setString(3, item.changeType());
-            ps.setInt(4, item.lines());
-            ps.setInt(5, item.linesFrom());
-            ps.setInt(6, item.linesTo());
-            ps.setInt(7, item.beginA());
-            ps.setInt(8, item.endA());
-            ps.setInt(9, item.beginB());
-            ps.setInt(10, item.endB());
+            ps.setString(3, item.project());
+            ps.setString(4, item.fullPath());
+            ps.setString(5, item.changeType());
+            ps.setInt(6, item.lines());
+            ps.setInt(7, item.linesFrom());
+            ps.setInt(8, item.linesTo());
+            ps.setInt(9, item.beginA());
+            ps.setInt(10, item.endA());
+            ps.setInt(11, item.beginB());
+            ps.setInt(12, item.endB());
             ps.addBatch();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -131,8 +137,8 @@ public class DbService {
         try (Connection connection = DriverManager.getConnection(CreateDiffs.URL, "sa", "sa")) {
             try (PreparedStatement ps = connection.prepareStatement(
                     "INSERT INTO diffentries(" +
-                            "commit1, commit2, oldId, newId, changetype) " +
-                            "VALUES (?, ?, ?, ?, ?)")) {
+                            "commit1, commit2, oldId, newId, project, fullPath, changetype) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?)")) {
 
                 diffEntries.forEach(item -> {
                     try {
@@ -140,7 +146,9 @@ public class DbService {
                         ps.setString(2, item.commit2Id());
                         ps.setString(3, item.oldId());
                         ps.setString(4, item.newId());
-                        ps.setString(5, item.changeType());
+                        ps.setString(5, item.project());
+                        ps.setString(6, item.fullPath());
+                        ps.setString(7, item.changeType());
                         ps.addBatch();
                     } catch (SQLException e) {
                         throw new RuntimeException(e);

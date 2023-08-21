@@ -21,8 +21,33 @@ function _key(Swatches, chart) {
     )
 }
 
-function _chart(d3, flare, tile, DOM, complexity) {
-    flare = d3.filter(flare, i => i.complexity > complexity);
+function subtractMonths(date, months) {
+    date.setMonth(date.getMonth() - months);
+    return date;
+}
+
+function _chart(d3, flare, tile, DOM, complexity, statements, projects, startdate) {
+    console.log(flare, complexity, statements, projects);
+    flare = d3.filter(flare, i =>
+        i.complexity > complexity &&
+        i.size > statements &&
+        i.epoch > startdate
+    );
+
+    if (projects.length > 0) {
+        const setOfProjects = new Set(projects);
+        flare = d3.filter(flare, i => setOfProjects.has(i.project));
+    }
+
+    const methods = flare.length;
+    document.querySelector(".methods").innerText = methods;
+
+    const sumOfStatements = d3.sum(flare, d => d.size);
+    document.querySelector(".statements").innerText = sumOfStatements;
+
+    const sumOfComplexity = d3.sum(flare, d => d.complexity);
+    document.querySelector(".complexity").innerText = sumOfComplexity;
+
     // console.log(flare);
 
     // Stratify.
@@ -62,7 +87,7 @@ function _chart(d3, flare, tile, DOM, complexity) {
 
     // Add a cell for each leaf of the hierarchy, with a link to the corresponding GitHub page.
     const leaf = g.selectAll("g")
-        .data(d3.filter(root.leaves(), l => l.data.data.complexity > complexity))
+        .data(root.leaves())
         .join("a")
         .attr("transform", d => `translate(${d.x0},${d.y0})`)
         .attr("href", d => `http://pdbitbucket01:7990/projects/EQA-SPLIT/repos/${d.data.data.project}/browse/${d.data.data.fullPath}#${d.data.data.lineStart}`)
@@ -122,13 +147,13 @@ function _chart(d3, flare, tile, DOM, complexity) {
 }
 
 
-function _flare(FileAttachment) {
-    return (
-        FileAttachment("flare.csv").csv({typed: true})
-    )
+async function _flare(FileAttachment) {
+    const data = await FileAttachment("data.csv").csv({typed: true});
+    console.log(data);
+    return data;
 }
 
-export default function define(runtime, observer) {
+export default async function define(runtime, observer) {
     const main = runtime.module();
 
     function toString() {
@@ -136,21 +161,36 @@ export default function define(runtime, observer) {
     }
 
     const fileAttachments = new Map([
-        ["flare.csv", {url: new URL("./files/data.csv", import.meta.url), mimeType: "text/csv", toString}]
+        ["data.csv", {url: new URL("./files/data.csv", import.meta.url), mimeType: "text/csv", toString}],
+        ["projects.csv", {url: new URL("./files/projects.csv", import.meta.url), mimeType: "text/csv", toString}]
     ]);
 
     main.builtin("FileAttachment", runtime.fileAttachments(name => fileAttachments.get(name)));
 
+    main.variable(observer("projects")).define("projects", ["Generators", "viewof projects"], (G, c) => G.input(c));
+    main.variable(observer("viewof projects")).define("viewof projects", ["Inputs", "d3"],
+        async (Inputs, d3) => {
+            const data = await d3.csv("files/projects.csv");
+            const projects = data.map(d => d.name);
+            return Inputs.checkbox(projects, {label: "Projects"})
+        });
+
     // console.log(_flare);
-    main.variable(observer("viewof complexity")).define("viewof complexity", ["Inputs", "d3"], (Inputs, d3) => Inputs.range([0, 500], {label: "Complexity", step: 5}));
+    main.variable(observer("viewof startdate")).define("viewof startdate", ["Inputs"], (Inputs) => Inputs.date({label: "Date", value: subtractMonths(new Date(), 4)}));
+    main.variable(observer("startdate")).define("startdate", ["Generators", "viewof startdate"], (G, c) => G.input(c));
+
+    main.variable(observer("viewof complexity")).define("viewof complexity", ["Inputs", "d3"], (Inputs, d3) => Inputs.range([0, 500], {label: "Complexity", step: 5, value: 0}));
     main.variable(observer("complexity")).define("complexity", ["Generators", "viewof complexity"], (G, c) => G.input(c));
+
+    main.variable(observer("viewof statements")).define("viewof statements", ["Inputs", "d3"], (Inputs, d3) => Inputs.range([0, 500], {label: "Statements", step: 5, value: 0}));
+    main.variable(observer("statements")).define("statements", ["Generators", "viewof statements"], (G, c) => G.input(c));
 
     main.variable(observer("viewof tile")).define("viewof tile", ["Inputs", "d3"], _tile);
     main.variable(observer("tile")).define("tile", ["Generators", "viewof tile"], (G, _) => G.input(_));
 
     main.variable(observer("key")).define("key", ["Swatches", "chart"], _key);
 
-    main.variable(observer("chart")).define("chart", ["d3", "flare", "tile", "DOM", "complexity"], _chart);
+    main.variable(observer("chart")).define("chart", ["d3", "flare", "tile", "DOM", "complexity", "statements", "projects", "startdate"], _chart);
     main.variable(observer("flare")).define("flare", ["FileAttachment"], _flare);
 
     const child1 = runtime.module(define1);

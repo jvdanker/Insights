@@ -5,7 +5,12 @@ import org.eclipse.jgit.diff.Edit;
 import java.util.List;
 
 public record DiffEdits(
-        String commitId, String fileId, List<Edit> edits, String diff) {
+        String commitId,
+        String fileId,
+        String project,
+        String fullPath,
+        List<Edit> edits,
+        String diff) {
 
     /*
     An edit where beginA == endA && beginB < endB is an insert edit,
@@ -50,6 +55,8 @@ public record DiffEdits(
         return new DiffEdit(
                 this.commitId,
                 this.fileId,
+                this.project,
+                this.fullPath,
                 type.toString(),
                 lines,
                 linesFrom,

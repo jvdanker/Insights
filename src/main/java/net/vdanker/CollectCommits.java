@@ -45,7 +45,7 @@ public class CollectCommits {
 
         List<File> list = Arrays.stream(files)
                 .filter(File::isDirectory)
-//                .filter(l -> l.getName().equals("test.git"))
+                .filter(l -> l.getName().equals("test.git"))
 //                .filter(l -> l.getName().equals("eqa-apps-exams.git"))
 //                .filter(l -> apps.contains(l.getName()))
                 .toList();

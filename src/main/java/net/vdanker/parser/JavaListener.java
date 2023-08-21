@@ -15,19 +15,18 @@ import java.util.List;
 
 public class JavaListener extends parsers.JavaParserBaseListener implements ParseTreeListener {
     final Parser parser;
-    private final ObjectId objectId;
+    final ObjectId objectId;
+
     String packageDeclaration;
     String className;
-
     List<JavaMethod> methods = new ArrayList<>();
     List<String> methodCalls;
-
     List<JavaImportDeclaration> importDeclarations = new ArrayList<>();
     int blockStatements;
-    private List<FormalParameter> formalParametersList;
-    private int complexity;
-    private int localVariableDeclarations;
-    private int methodStart;
+    List<FormalParameter> formalParametersList;
+    int complexity;
+    int localVariableDeclarations;
+    int methodStart;
 
     public JavaListener(ObjectId objectId, Parser parser) {
         this.parser = parser;

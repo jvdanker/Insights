@@ -58,6 +58,13 @@ public class GitStreams {
     }
 
     private static Repository openRepository(File location) throws IOException, InvalidRefNameException {
+        if (location.getName().endsWith("test.git")) {
+            return new FileRepositoryBuilder()
+                    .setGitDir(new File(location, ".git"))
+                    .setBare()
+                    .build();
+        }
+
         return new FileRepositoryBuilder()
 //                .setGitDir(new File(location, ".git"))
                 .setGitDir(location)

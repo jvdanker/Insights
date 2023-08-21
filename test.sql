@@ -290,18 +290,20 @@ WHERE CASE
    and m.COMPLEXITY > 1
 order by 1,2 desc,3,4,5;
 
-
-
 select package
     , class
     , method
     , statements
     , complexity
     , f.PROJECT
+    , f.FULLPATH
+    , m.LINESTART
+    , c.EPOCH
   from methods m
 inner join files f on m.FILE_ID = f.OBJECT_ID
-where not method in ('equals', 'hashCode') and COMPLEXITY > 100;
-
+inner join DIFFENTRIES de on f.OBJECT_ID = de.NEWID
+inner join COMMITS c on de.COMMIT1 = c.COMMIT_ID
+order by c.EPOCH desc;
 
 select f.PROJECT, count(m.METHOD), sum(m.STATEMENTS)
 from methods m
@@ -329,3 +331,71 @@ group by m.STATEMENTS
 order by 1 desc;
 
 select count(distinct commit) from DIFFSEDITS;
+
+-- amount of rework
+select f.PROJECT
+     , f.FULLPATH
+     , c.EPOCH
+from files f
+         inner join DIFFENTRIES de on f.OBJECT_ID = de.NEWID
+         inner join COMMITS c on de.COMMIT1 = c.COMMIT_ID
+order by c.EPOCH desc;
+
+-- deleted files
+selectc.epoch, count(*) as count
+  from DIFFSEDITS de
+  inner join commits c on de.COMMIT = c.COMMIT_ID
+where de.begina = 0 and de.enda > 0 and de.beginb = 0 and de.endb = 0
+and de.edittype = 'DELETE'
+group by c.epoch
+order by 1 desc
+;
+
+-- new files == new work
+select c.epoch, count(*) as count, sum(linesto) as lines
+from DIFFSEDITS de
+         inner join commits c on de.COMMIT = c.COMMIT_ID
+where de.EDITTYPE = 'INSERT'
+  AND BEGINA = 0 AND ENDA = 0 AND BEGINB = 0 AND ENDB > 0
+group by c.epoch
+order by 1 desc;
+
+-- new work
+select c.EPOCH, count(*) as count, sum(LINESTO - LINESFROM) as lines
+from DIFFSEDITS de
+         inner join commits c on de.COMMIT = c.COMMIT_ID
+where de.EDITTYPE = 'INSERT'
+  and de.begina = de.enda and de.begina = de.beginb
+  and de.begina > 0 and de.enda > 0 and de.beginb > 0 and de.endb > 0
+group by c.EPOCH
+order by 1 desc;
+
+-- refactor work
+select c.EPOCH, count(*) as count, sum(linesto - linesfrom) as lines
+from DIFFSEDITS de
+         inner join commits c on de.COMMIT = c.COMMIT_ID
+where de.EDITTYPE = 'REPLACE'
+  and de.begina > 0 and de.enda > 0 and de.beginb > 0 and de.endb > 0
+group by c.EPOCH
+order by 1 desc;
+
+/*
+New work - New work is brand new code that has been added to the code base.
+
+Refactor - Refactored work represents changes to legacy code. LinearB considers code "legacy" if it has been in your code-base for over 21 days.
+Some degree of refactored code is acceptable and even required for improving systems quality.
+A large amount of refactoring in a single release is not recommended, as these changes have a higher probability of harming existing functionality.
+
+Rework - Reworked code is relatively new code that is modified in a branch. LinearB considers any changes to code that has been in your code-base for less than 21 days as reworked code.
+High levels of reworked code could indicate a quality issue in recent releases.
+ */
+
+ select fileid, files.*
+ from DIFFSEDITS
+ left outer join files on FILEID = OBJECT_ID
+ where fileid <> '0000000000000000000000000000000000000000'
+
+
+ select *
+   from DIFFSEDITS
+ where begina <> beginb;

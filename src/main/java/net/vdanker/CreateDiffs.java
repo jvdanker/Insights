@@ -82,7 +82,7 @@ public class CreateDiffs {
     }
 
     private static List<DiffEntry> getDiffsBetweenTwoTrees(
-            String name,
+            String project,
             Repository repo,
             RevCommit c1,
             RevCommit c2) throws IOException {
@@ -106,13 +106,15 @@ public class CreateDiffs {
                         .call();
 
                 for (org.eclipse.jgit.diff.DiffEntry entry : diffs) {
-                    DiffEdits diffEdits = createDiffEdits(name, repo, c1, entry);
+                    DiffEdits diffEdits = createDiffEdits(project, repo, c1, entry);
 
                     result.add(new DiffEntry(
                             c1.getId().getName(),
                             c2 == null ? "" : c2.getId().getName(),
                             entry.getOldId().name(),
                             entry.getNewId().name(),
+                            project,
+                            entry.getNewPath(),
                             entry.getChangeType().toString(),
                             entry,
                             diffEdits));
@@ -145,7 +147,7 @@ public class CreateDiffs {
     }
 
     private static DiffEdits createDiffEdits(
-            String name,
+            String project,
             Repository repo,
             RevCommit commit,
             org.eclipse.jgit.diff.DiffEntry entry) {
@@ -161,6 +163,8 @@ public class CreateDiffs {
             return new DiffEdits(
                     commit.getId().getName(),
                     entry.getNewId().name(),
+                    project,
+                    fileHeader.getNewPath(),
                     fileHeader.toEditList(),
                     bos.toString());
         } catch (IOException e) {
