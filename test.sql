@@ -399,3 +399,46 @@ High levels of reworked code could indicate a quality issue in recent releases.
  select *
    from DIFFSEDITS
  where begina <> beginb;
+
+-- complexity vs churn
+select f.PROJECT
+      , m.CLASS
+      , m.METHOD
+      , m.STATEMENTS
+      , m.COMPLEXITY
+      , count(de.ID) as churn
+  from methods m
+inner join files f on m.FILE_ID = f.OBJECT_ID
+inner join DIFFENTRIES de on f.PROJECT = de.PROJECT and f.FULLPATH = de.FULLPATH
+--where METHOD = 'findBySessionCycle'
+group by f.PROJECT, m.CLASS, m.METHOD, m.STATEMENTS, m.COMPLEXITY
+order by count(de.id) desc
+;
+
+select f.PROJECT
+     , m.CLASS
+     , sum(m.STATEMENTS) as statements
+     , sum(m.COMPLEXITY) as complexity
+     , count(de.ID) as churn
+from methods m
+         inner join files f on m.FILE_ID = f.OBJECT_ID
+         inner join DIFFENTRIES de on f.PROJECT = de.PROJECT and f.FULLPATH = de.FULLPATH
+         inner join COMMITS c on de.COMMIT1 = c.COMMIT_ID
+where c.EPOCH > DATEADD('YEAR', -1, CURRENT_DATE)
+group by f.PROJECT, m.CLASS, m.STATEMENTS, m.COMPLEXITY
+order by count(de.id) desc
+;
+
+select f.PROJECT
+     , m.CLASS
+     , m.STATEMENTS
+     , m.COMPLEXITY
+     , count(de.ID) as churn
+from methods m
+         inner join files f on m.FILE_ID = f.OBJECT_ID
+         inner join DIFFENTRIES de on f.PROJECT = de.PROJECT and f.FULLPATH = de.FULLPATH
+         inner join COMMITS c on de.COMMIT1 = c.COMMIT_ID
+where c.EPOCH > DATEADD('YEAR', -1, CURRENT_DATE)
+group by f.PROJECT, m.CLASS, m.STATEMENTS, m.COMPLEXITY
+order by count(de.id) desc
+;

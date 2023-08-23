@@ -23,6 +23,7 @@ dependencies {
     developmentOnly "org.springframework.boot:spring-boot-devtools"
 
     implementation 'org.eclipse.jgit:org.eclipse.jgit:6.6.0.202305301015-r'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.apache:6.6.0.202305301015-r'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
