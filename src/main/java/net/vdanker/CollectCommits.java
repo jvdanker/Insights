@@ -45,7 +45,7 @@ public class CollectCommits {
 
         List<File> list = Arrays.stream(files)
                 .filter(File::isDirectory)
-                .filter(l -> l.getName().equals("test.git"))
+//                .filter(l -> l.getName().equals("test.git"))
 //                .filter(l -> l.getName().equals("eqa-apps-exams.git"))
 //                .filter(l -> apps.contains(l.getName()))
                 .toList();
@@ -64,7 +64,7 @@ public class CollectCommits {
             CreateDiffs app = new CreateDiffs();
             app.scanAndSave(name, l.getAbsolutePath());
 
-            System.out.println("Collection method stats...");
+            System.out.println("Collecting method stats...");
             MethodStats.collectAndSave(l.getAbsolutePath());
 
             System.out.println("Done.");

@@ -55,8 +55,89 @@ public class Query {
         try {
             generateData();
             generateProjects();
+            generateChurn();
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void generateChurn() {
+        try (Connection connection = DriverManager.getConnection(URL, "sa", "sa")) {
+            try (PreparedStatement s = connection.prepareStatement(
+                    """
+                        select m.PROJECT
+                             , m.CLASS
+                             , m.FULLPATH
+                             , m.STATEMENTS
+                             , m.COMPLEXITY
+                             , count(de.id) as churn
+                             , max(c.epoch) as epoch
+                        from commits c
+                                 inner join DIFFENTRIES de on c.COMMIT_ID = de.COMMIT1
+                                 inner join (select f.PROJECT
+                                                  , m.CLASS
+                                                  , f.FULLPATH
+                                                  , sum(m.STATEMENTS) as statements
+                                                  , sum(m.COMPLEXITY) as complexity
+                                             from files f
+                                                      inner join methods m on f.OBJECT_ID = m.FILE_ID
+                                             group by f.PROJECT, m.class, f.FULLPATH) m
+                                 on de.FULLPATH = m.FULLPATH
+                        where c.EPOCH > DATEADD('MONTH', -6, CURRENT_DATE)
+                        group by m.PROJECT, m.CLASS, m.FULLPATH, m.STATEMENTS, m.COMPLEXITY
+                        """)) {
+                ResultSet resultSet = s.executeQuery();
+
+                List<Churn> entries = new ArrayList<>();
+                while (resultSet.next()) {
+                    String project = resultSet.getString(1);
+                    String className = resultSet.getString(2);
+                    String fullPath = resultSet.getString(3);
+                    int statements = resultSet.getInt(4);
+                    int complexity = resultSet.getInt(5);
+                    int churn = resultSet.getInt(6);
+                    Date epoch = resultSet.getDate(7);
+
+                    entries.add(
+                            new Churn(
+                                    project,
+                                    className,
+                                    fullPath,
+                                    statements,
+                                    complexity,
+                                    churn,
+                                    epoch
+                            )
+                    );
+                }
+
+                String fileName = "treemap-stratify/files/churn.csv";
+                BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+                writer.write("project,className,fullPath,statements,complexity,churn,epoch\n");
+
+                entries
+                        .forEach(p -> {
+                            try {
+                                writer.write(String.format("%s,%s,%s,%d,%d,%d,%s\n",
+                                        p.project(),
+                                        p.className(),
+                                        p.fullPath(),
+                                        p.statements(),
+                                        p.complexity(),
+                                        p.churn(),
+                                        p.epoch()
+                                        ));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+
+                writer.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

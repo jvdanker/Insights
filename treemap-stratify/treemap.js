@@ -1,4 +1,4 @@
-import define1 from "./a33468b95d0b15b0@817.js";
+// import define1 from "./a33468b95d0b15b0@817.js";
 
 function _tile(Inputs, d3) {
     return (
@@ -193,8 +193,8 @@ export default async function define(runtime, observer) {
     main.variable(observer("chart")).define("chart", ["d3", "flare", "tile", "DOM", "complexity", "statements", "projects", "startdate"], _chart);
     main.variable(observer("flare")).define("flare", ["FileAttachment"], _flare);
 
-    const child1 = runtime.module(define1);
-    main.import("Swatches", child1);
+    // const child1 = runtime.module(define1);
+    // main.import("Swatches", child1);
 
     return main;
 }

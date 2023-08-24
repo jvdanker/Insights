@@ -425,7 +425,7 @@ from methods m
          inner join DIFFENTRIES de on f.PROJECT = de.PROJECT and f.FULLPATH = de.FULLPATH
          inner join COMMITS c on de.COMMIT1 = c.COMMIT_ID
 where c.EPOCH > DATEADD('YEAR', -1, CURRENT_DATE)
-group by f.PROJECT, m.CLASS, m.STATEMENTS, m.COMPLEXITY
+group by f.PROJECT, m.CLASS
 order by count(de.id) desc
 ;
 
@@ -438,7 +438,50 @@ from methods m
          inner join files f on m.FILE_ID = f.OBJECT_ID
          inner join DIFFENTRIES de on f.PROJECT = de.PROJECT and f.FULLPATH = de.FULLPATH
          inner join COMMITS c on de.COMMIT1 = c.COMMIT_ID
-where c.EPOCH > DATEADD('YEAR', -1, CURRENT_DATE)
+where c.EPOCH > DATEADD('MONTH', -1, CURRENT_DATE)
 group by f.PROJECT, m.CLASS, m.STATEMENTS, m.COMPLEXITY
 order by count(de.id) desc
 ;
+
+select *
+from DIFFENTRIES de
+inner join files f on de.FULLPATH = f.FULLPATH
+and f.FULLPATH like '%LearnerLinkVisibilitySettings.java';
+
+select max(c.epoch) as epoch
+     , m.PROJECT
+     , m.CLASS
+     , m.STATEMENTS
+     , m.COMPLEXITY
+     , count(de.id) as churn
+from commits c
+         inner join DIFFENTRIES de on c.COMMIT_ID = de.COMMIT1
+         inner join (select f.PROJECT
+                          , m.CLASS
+                          , f.FULLPATH
+                          , sum(m.STATEMENTS) as statements
+                          , sum(m.COMPLEXITY) as complexity
+                     from files f
+                              inner join methods m on f.OBJECT_ID = m.FILE_ID
+                     --where f.FULLPATH like '%LearnerLinkVisibilitySettings.java'
+                     group by f.PROJECT, m.class, f.FULLPATH) m on de.FULLPATH = m.FULLPATH
+--where m.FULLPATH like '%LearnerLinkVisibilitySettings.java'
+where c.EPOCH > DATEADD('YEAR', -1, CURRENT_DATE)
+group by m.PROJECT, m.CLASS, m.STATEMENTS, m.COMPLEXITY
+;
+
+select f.PROJECT
+     , m.CLASS
+     , f.FULLPATH
+     , sum(m.STATEMENTS) as statements
+     , sum(m.COMPLEXITY) as complexity
+from files f
+inner join methods m on f.OBJECT_ID = m.FILE_ID
+where f.FULLPATH like  '%LearnerLinkVisibilitySettings.java'
+group by f.PROJECT, m.class, f.FULLPATH
+;
+
+select project, FULLPATH, count(*)
+from files
+group by project, FULLPATH
+having count(*) > 1;

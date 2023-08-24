@@ -3,14 +3,16 @@
 <head>
     <meta charset="utf-8">
     <title>Treemap, CSV</title>
-    <link rel="stylesheet" type="text/css" href="./inspector.css">
+<!--    <link rel="stylesheet" type="text/css" href="./inspector.css">-->
 </head>
 <body>
+<a href="churn.html">churn</a>
 <div>Number of methods: <span class="methods"></span></div>
 <div>Number of statements: <span class="statements"></span></div>
 <div>Sum of level of complexity: <span class="complexity"></span></div>
 <script type="module">
-    import define from "./index.js";
+    // import define from "./index.js";
+    import define from "./treemap.js";
     import {Runtime, Library, Inspector} from "./runtime.js";
 
     const runtime = new Runtime();
