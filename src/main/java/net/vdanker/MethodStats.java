@@ -2,11 +2,13 @@ package net.vdanker;
 
 import net.vdanker.mappers.GitStreams;
 import net.vdanker.mappers.InputStreamMapper;
+import net.vdanker.parser.JavaFileParser;
+import net.vdanker.parser.model.JavaClass;
 import net.vdanker.parser.model.JavaMethod;
 import net.vdanker.parser.model.JavaStats;
 import org.eclipse.jgit.lib.Repository;
 
-import java.io.File;
+import java.io.*;
 import java.sql.*;
 import java.util.*;
 
@@ -14,13 +16,25 @@ public class MethodStats {
 
     static String URL = "jdbc:h2:tcp://localhost:9092/./test";
 
+    public static void main(String[] args) throws IOException, FileNotFoundException {
+        try (InputStream is = new FileInputStream("/Users/juan/workspace/github.com/Insights/src/main/resources/Test.java")) {
+            JavaStats parse = JavaFileParser.parse(null, is);
+            System.out.println(parse.classes());
+            for (JavaClass aClass : parse.classes()) {
+                System.out.println(aClass.fqName());
+                aClass.methods().forEach(m -> System.out.println("\t" + m.methodName()));
+            }
+        }
+    }
     public static void collectAndSave(String dir) {
         var methods = GitStreams.fromBareRepository(new File(dir))
                 .streamTreeObjects()
                 .filter(t -> t.name().endsWith(".java"))
                 .filter(t -> !t.path().contains("/test/"))
                 .map(InputStreamMapper::toJavaStats)
-                .map(JavaStats::methods)
+                .map(JavaStats::classes)
+                .flatMap(Collection::stream)
+                .map(JavaClass::methods)
                 .flatMap(Collection::stream)
                 .filter(e -> !e.methodName().startsWith("get"))
                 .filter(e -> !e.methodName().startsWith("set"))

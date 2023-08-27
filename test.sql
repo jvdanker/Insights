@@ -145,8 +145,8 @@ order by 2 desc;
 select *
 from FILES
 where extension = 'java'
-  and module != 'test-all'
-  and module != 'presentation'
+--  and module != 'test-all'
+--  and module != 'presentation'
 order by size desc;
 
 select module, count(*)
@@ -342,7 +342,7 @@ from files f
 order by c.EPOCH desc;
 
 -- deleted files
-selectc.epoch, count(*) as count
+select c.epoch, count(*) as count
   from DIFFSEDITS de
   inner join commits c on de.COMMIT = c.COMMIT_ID
 where de.begina = 0 and de.enda > 0 and de.beginb = 0 and de.endb = 0
@@ -466,9 +466,18 @@ from commits c
                      --where f.FULLPATH like '%LearnerLinkVisibilitySettings.java'
                      group by f.PROJECT, m.class, f.FULLPATH) m on de.FULLPATH = m.FULLPATH
 --where m.FULLPATH like '%LearnerLinkVisibilitySettings.java'
-where c.EPOCH > DATEADD('YEAR', -1, CURRENT_DATE)
+--where c.EPOCH > DATEADD('YEAR', -1, CURRENT_DATE)
 group by m.PROJECT, m.CLASS, m.STATEMENTS, m.COMPLEXITY
 ;
+
+select count(distinct m.CLASS)
+from files f
+inner join methods m on f.FULLPATH = m.
+where f.extension = 'java';
+
+select count(*)
+from files f
+where f.extension = 'java';
 
 select f.PROJECT
      , m.CLASS
@@ -485,3 +494,36 @@ select project, FULLPATH, count(*)
 from files
 group by project, FULLPATH
 having count(*) > 1;
+
+select m.PROJECT
+     , m.CLASS
+     , m.FULLPATH
+     , m.STATEMENTS
+     , m.COMPLEXITY
+     , de.id as churn
+     , c.epoch as epoch
+from commits c
+         inner join DIFFENTRIES de on c.COMMIT_ID = de.COMMIT1
+         inner join (select f.PROJECT
+                          , m.CLASS
+                          , f.FULLPATH
+                          , sum(m.STATEMENTS) as statements
+                          , sum(m.COMPLEXITY) as complexity
+                     from files f
+                              inner join methods m on f.OBJECT_ID = m.FILE_ID
+                     group by f.PROJECT, m.class, f.FULLPATH) m
+                    on de.FULLPATH = m.FULLPATH
+//                        where c.EPOCH > DATEADD('MONTH', -6, CURRENT_DATE)
+where m.FULLPATH = 'common/src/main/java/nz/govt/nzqa/edorg/oxi/service/TertiaryEducationOrganisationServiceProxy.java'
+order by c.EPOCH desc;
+--group by m.PROJECT, m.CLASS, m.FULLPATH, m.STATEMENTS, m.COMPLEXITY
+;
+
+select FULLPATH, count(*)
+from DIFFENTRIES
+where FULLPATH = 'common/src/main/java/nz/govt/nzqa/edorg/oxi/service/TertiaryEducationOrganisationServiceProxy.java'
+group by FULLPATH
+having count(*) > 10
+
+select * from METHODS
+where CLASS like 'DigitalEntryHelper'

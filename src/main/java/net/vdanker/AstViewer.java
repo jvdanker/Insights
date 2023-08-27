@@ -24,12 +24,12 @@ public class AstViewer {
 
         final CollectFilesVisitor visitor = new CollectFilesVisitor();
         Files.walkFileTree(
-                FileSystems.getDefault().getPath("src/main/java"),
+                FileSystems.getDefault().getPath("src/main/resources"),
                 visitor);
 
         var context = visitor.stream()
                 .filter(f -> f.getName().endsWith(".java"))
-                .filter(f -> f.getAbsolutePath().contains("/AstViewer.java"))
+                .filter(f -> f.getAbsolutePath().contains("/LearnerSearchHelper.java"))
                 .map(FileMapper::toInputStream)
                 .map(InputStreamMapper::toParser)
                 .map(p -> new Pair<>(p, p.compilationUnit()))

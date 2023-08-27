@@ -32,10 +32,12 @@ public class Main {
 
         pairStream.forEach(p -> {
             System.out.println(p.fqClassName());
-            p.methods().forEach(m -> {
-                System.out.printf("  %s - %d\n", m.methodName(), m.blockStatements());
+            p.classes().forEach(c -> {
+                c.methods().forEach(m -> {
+                    System.out.printf("  %s - %d\n", m.methodName(), m.blockStatements());
 
-                m.methodCalls().forEach(mc -> System.out.printf("    %s\n", mc));
+                    m.methodCalls().forEach(mc -> System.out.printf("    %s\n", mc));
+                });
             });
         });
     }

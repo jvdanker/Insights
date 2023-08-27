@@ -8,7 +8,12 @@ import define1 from "./churn-inputs.js";
 // `
 // )}
 
-function _chart(d3,DOM,width,height){return(
+function subtractMonths(date, months) {
+    date.setMonth(date.getMonth() - months);
+    return date;
+}
+
+function _chart(d3,DOM,width,height, startdate){return(
     d3.select(DOM.svg(width, height))
         .attr('style', 'border: 1px solid #f0f0f0')
         .node()
@@ -46,22 +51,49 @@ function _chart(d3,DOM,width,height){return(
 // `
 // )}
 
-async function _csvdata(d3,FileAttachment){return(
-    d3.csvParse(await FileAttachment("example_data2.csv").text())
-        .map(d => ({
-            churn: +d.churn,
-            statements: +d.statements,
-            complexity: +d.complexity,
-            project: d.project,
-            className: d.className,
-            fullPath: d.fullPath,
-            epoch: new Date(d.epoch)
-        }))
-)}
+async function _csvdata(d3, FileAttachment){
+    return d3
+        .csvParse(await FileAttachment("example_data2.csv").text())
+        // .splice(0, 2000)
+        .map(d => {
+            return {
+                commitId: d.commitId,
+                statements: +d.statements,
+                complexity: +d.complexity,
+                project: d.project,
+                className: d.className,
+                fullPath: d.fullPath,
+                epoch: new Date(d.epoch)
+            };
+        });
+}
 
-function _initialSlice(csvdata){return(
-    csvdata.slice(0,9999)
-)}
+function _initialSlice(d3, csvdata, startdate, enddate, strict) {
+    let data = csvdata.reduce((acc, curr) => {
+        const key = `${curr.project}-${curr.className}-${curr.fullPath}`;
+        acc[key] = acc[key] ?? [];
+        acc[key].push(curr);
+        return acc;
+    }, {});
+
+    let data2 = [];
+    Object.keys(data)
+        .forEach(key => {
+            const v = data[key];
+            let commits = v.reduce((a, c) => {
+                a.push(c.epoch);
+                return a;
+            }, []);
+
+            if (strict.find(x => x === 'strict')) {
+                commits = commits.filter(c => c >= startdate && c <= enddate);
+            }
+
+            data2.push({...v[0], commits: commits, churn: commits.length});
+        });
+
+    return data2.filter(d => d.commits.filter(c => c >= startdate && c <= enddate).length > 0);
+}
 
 // function _subset(csvdata,start,datawidth){return(
 //     csvdata.slice(start, start+datawidth)
@@ -140,13 +172,13 @@ function _9(d3,chart,width,margin,height,d3legend,colorScale,rScale,setScale,ini
 }
 
 
-// function _10(setScale,subset,update,md)
-// {
-//     setScale(subset)
-//     update(subset)
-//
-//     return md`Update when subset changes`
-// }
+function _10(setScale,subset,update,md)
+{
+    setScale(subset)
+    update(subset)
+
+    return md`Update when subset changes`
+}
 
 
 // function _11(md){return(
@@ -216,40 +248,55 @@ function _parseTime(d3){return(
     d3.timeParse("%Y-%m-%d %H:%M:%S.%f+00")
 )}
 
-function _setScale(d3,xScale,xAxisCall,yScale,yAxisCall){return(
+function _setScale(d3,xScale,xAxisCall,yScale,yAxisCall){
+
     function setScale(data){
         let rgx = d3.extent(data, d => d.churn).reduce((a,b) => b-a)*0.1;
-        xScale.domain(
-            [
-                0, //d3.min(data, d => d.Frequency)-rgx,
-                d3.max(data, d => d.churn)+rgx
-            ]
-        ).nice();
-
-        //xScale.range([margin.left, width-(margin.right+margin.left)])
+        xScale.domain([0, d3.max(data, d => d.churn)+rgx]).nice();
         xAxisCall.scale(xScale)
 
-        //yScale.domain(d3.extent(data, d => d.Date))
         let rgy = d3.extent(data, d => d.complexity).reduce((a,b) => b-a)*0.01;
-        yScale.domain(
-            [
-                // d3.min(data, d => d3.timeMillisecond.offset(d.Date, -rgy)),
-                // d3.max(data, d => d3.timeMillisecond.offset(d.Date, +rgy))
-                // d3.min(data, d => d.complexity),
-                0,
-                d3.max(data, d => d.complexity)
-            ]
-        ).nice();
-
+        yScale.domain([0, d3.max(data, d => d.complexity)]).nice();
         yAxisCall.scale(yScale)
     }
-)}
 
-function _update(d3,xScale,yScale,rScale,opacityScale, colorScale,updateAxis){return(
-    function update (data){
+    return setScale;
+}
+
+function _update(d3,xScale,yScale,rScale,opacityScale, colorScale,updateAxis, width, height, margin){
+    return function update (data){
         var t = d3.transition()
             .duration(500)
             .ease(d3.easeLinear);
+
+        d3.select('#vis')
+            .append('rect')
+            .attr('x', () => xScale(5))
+            .attr('y', 0) // margin.top)
+            .attr('width', () => width - margin.left - margin.right - xScale(5))
+            .attr('height', () => yScale(10))
+            .attr('fill', 'steelblue')
+            .attr('opacity', '0.09');
+
+        d3.select('#vis')
+            .append('line')
+            .style("stroke", "lightgrey")
+            .style("stroke-width", 2)
+            .style('stroke-dasharray', '5,5')
+            .attr("x1", () => xScale(5))
+            .attr("y1", margin.top)
+            .attr("x2", () => xScale(5))
+            .attr("y2", height - margin.top - margin.bottom);
+
+        d3.select('#vis')
+            .append('line')
+            .style("stroke", "lightgrey")
+            .style("stroke-width", 2)
+            .style('stroke-dasharray', '5,5')
+            .attr("x1", 0)
+            .attr("y1", () => yScale(10))
+            .attr("x2", width - margin.left - margin.right)
+            .attr("y2", () => yScale(10))
 
         // update the circles
         var us = d3.select('#vis').selectAll("circle")
@@ -262,10 +309,10 @@ function _update(d3,xScale,yScale,rScale,opacityScale, colorScale,updateAxis){re
             .attr("cx", function(d, i) { return xScale(d.churn) })
             .attr("cy", function(d) { return yScale(d.complexity) })
             .style('cursor', 'crosshair')
-            .on('click', d => {
+            .on('click', (event, d) => {
                 window.open(`http://pdbitbucket01:7990/projects/EQA-SPLIT/repos/${d.project}/browse/${d.fullPath}`, '_blank');
             })
-            .on('mouseover', d => {
+            .on('mouseover', (event, d) => {
                 div
                     .transition()
                     .duration(200)
@@ -281,13 +328,13 @@ function _update(d3,xScale,yScale,rScale,opacityScale, colorScale,updateAxis){re
 <tr><td>Last change:</td><td>${d.epoch}</td></tr>
 </table>
 `)
-                    .style('left', d3.event.pageX + 18 + 'px')
-                    .style('top', d3.event.pageY - 28 + 'px');
+                    .style('left', event.pageX + 18 + 'px')
+                    .style('top', event.pageY - 28 + 'px');
             })
-            .on("mousemove", d => {
+            .on("mousemove", (event, d) => {
                 div
-                    .style("left", (d3.event.pageX+18) + "px")
-                    .style("top", (d3.event.pageY-28) + "px");
+                    .style("left", (event.pageX+18) + "px")
+                    .style("top", (event.pageY-28) + "px");
             })
             .on('mouseout', () => {
                 div
@@ -314,7 +361,7 @@ function _update(d3,xScale,yScale,rScale,opacityScale, colorScale,updateAxis){re
 
         updateAxis()
     }
-)}
+}
 
 function _xAxisCall(d3){return(
     d3.axisBottom().tickFormat(d3.format(".3s"))
@@ -327,7 +374,7 @@ function _yAxisCall(d3,formatTime){
 }
 
 function _xScale(d3,width,margin){return(
-    d3.scaleLinear()
+    d3.scaleSymlog()
         //.domain(d3.extent(initialSlice, d => d.Frequency))
         .range([0, width - (margin.right+margin.left)])
 )}
@@ -378,9 +425,9 @@ function _d3legend(require){return(
     require('d3-svg-legend@2.25.6/indexRollup.js')
 )}
 
-function _d3(require){return(
-    require('d3@5')
-)}
+// function _d3(require){return(
+//     require('d3@5')
+// )}
 
 export default function define(runtime, observer) {
     const main = runtime.module();
@@ -391,18 +438,32 @@ export default function define(runtime, observer) {
         // ["example_data2.csv", {url: "example_data2.csv", mimeType: "text/csv", toString}]
     ]);
 
+    main.variable(observer("viewof startdate")).define("viewof startdate", ["Inputs"], (Inputs) => Inputs.date({label: "Date", value: subtractMonths(new Date(), 12)}));
+    main.variable(observer("startdate")).define("startdate", ["Generators", "viewof startdate"], (G, c) => G.input(c));
+
+    main.variable(observer("viewof enddate")).define("viewof enddate", ["Inputs"], (Inputs) => Inputs.date({label: "Date", value: new Date()}));
+    main.variable(observer("enddate")).define("enddate", ["Generators", "viewof enddate"], (G, c) => G.input(c));
+
+    main.variable(observer("viewof strict")).define("viewof strict", ["Inputs", "d3"], (Inputs) => Inputs.checkbox(["strict"], {label:"Strict"}));
+    main.variable(observer("strict")).define("strict", ["Generators", "viewof strict"], (G, c) => G.input(c));
+
     main.builtin("FileAttachment", runtime.fileAttachments(name => fileAttachments.get(name)));
     // main.variable(observer()).define(["md"], _1);
-    main.variable(observer("chart")).define("chart", ["d3","DOM","width","height"], _chart);
+
+    main.variable(observer("chart")).define("chart", ["d3","DOM","width","height","startdate", "enddate"], _chart);
+
     // main.variable(observer("viewof start")).define("viewof start", ["slider"], _start);
     // main.variable(observer("start")).define("start", ["Generators", "viewof start"], (G, _) => G.input(_));
     // main.variable(observer("viewof datawidth")).define("viewof datawidth", ["slider"], _datawidth);
     // main.variable(observer("datawidth")).define("datawidth", ["Generators", "viewof datawidth"], (G, _) => G.input(_));
     // main.variable(observer()).define(["md"], _5);
     main.variable(observer("csvdata")).define("csvdata", ["d3","FileAttachment"], _csvdata);
-    main.variable(observer("initialSlice")).define("initialSlice", ["csvdata"], _initialSlice);
+    main.variable(observer("initialSlice")).define("initialSlice", ["d3", "csvdata", "startdate", "enddate", 'strict'], _initialSlice);
+
     // main.variable(observer("subset")).define("subset", ["csvdata","start"], _subset);
-    main.variable(observer()).define(["d3","chart","width","margin","height","d3legend","colorScale","rScale","setScale","initialSlice","initAxis","md","update"], _9);
+    main.variable(observer()).define(["d3",
+        "chart","width","margin","height","d3legend","colorScale","rScale","setScale","initialSlice","initAxis","md","update"], _9);
+
     // main.variable(observer()).define(["setScale","subset","update","md"], _10);
     // main.variable(observer()).define(["md"], _11);
     main.variable(observer("opacityScale")).define("opacityScale", ["d3","csvdata"], _opacityScale);
@@ -412,7 +473,11 @@ export default function define(runtime, observer) {
     // main.variable(observer("formatTime")).define("formatTime", ["d3"], _formatTime);
     // main.variable(observer("parseTime")).define("parseTime", ["d3"], _parseTime);
     main.variable(observer("setScale")).define("setScale", ["d3","xScale","xAxisCall","yScale","yAxisCall"], _setScale);
-    main.variable(observer("update")).define("update", ["d3","xScale","yScale","rScale","opacityScale", "colorScale","updateAxis"], _update);
+
+    main.variable(observer("update")).define("update",
+        ["d3","xScale","yScale","rScale","opacityScale", "colorScale","updateAxis", 'width', 'height', 'margin'],
+        _update);
+
     main.variable(observer("xAxisCall")).define("xAxisCall", ["d3"], _xAxisCall);
     main.variable(observer("yAxisCall")).define("yAxisCall", ["d3"], _yAxisCall);
     main.variable(observer("xScale")).define("xScale", ["d3","width","margin"], _xScale);
@@ -427,7 +492,7 @@ export default function define(runtime, observer) {
     main.import("slider", child1);
 
     main.variable(observer("d3legend")).define("d3legend", ["require"], _d3legend);
-    main.variable(observer("d3")).define("d3", ["require"], _d3);
+    // main.variable(observer("d3")).define("d3", ["require"], _d3);
 
     return main;
 }

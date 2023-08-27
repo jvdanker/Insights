@@ -72,8 +72,8 @@ public class Query {
                              , m.FULLPATH
                              , m.STATEMENTS
                              , m.COMPLEXITY
-                             , count(de.id) as churn
-                             , max(c.epoch) as epoch
+                             , c.COMMIT_ID
+                             , c.epoch as epoch
                         from commits c
                                  inner join DIFFENTRIES de on c.COMMIT_ID = de.COMMIT1
                                  inner join (select f.PROJECT
@@ -84,9 +84,9 @@ public class Query {
                                              from files f
                                                       inner join methods m on f.OBJECT_ID = m.FILE_ID
                                              group by f.PROJECT, m.class, f.FULLPATH) m
-                                 on de.FULLPATH = m.FULLPATH
-                        where c.EPOCH > DATEADD('MONTH', -6, CURRENT_DATE)
-                        group by m.PROJECT, m.CLASS, m.FULLPATH, m.STATEMENTS, m.COMPLEXITY
+                                            on de.FULLPATH = m.FULLPATH
+                        //                        where c.EPOCH > DATEADD('MONTH', -6, CURRENT_DATE)
+                        order by c.EPOCH desc;
                         """)) {
                 ResultSet resultSet = s.executeQuery();
 
@@ -97,7 +97,7 @@ public class Query {
                     String fullPath = resultSet.getString(3);
                     int statements = resultSet.getInt(4);
                     int complexity = resultSet.getInt(5);
-                    int churn = resultSet.getInt(6);
+                    String commitId = resultSet.getString(6);
                     Date epoch = resultSet.getDate(7);
 
                     entries.add(
@@ -107,7 +107,7 @@ public class Query {
                                     fullPath,
                                     statements,
                                     complexity,
-                                    churn,
+                                    commitId,
                                     epoch
                             )
                     );
@@ -115,18 +115,18 @@ public class Query {
 
                 String fileName = "treemap-stratify/files/churn.csv";
                 BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-                writer.write("project,className,fullPath,statements,complexity,churn,epoch\n");
+                writer.write("project,className,fullPath,statements,complexity,commitId,epoch\n");
 
                 entries
                         .forEach(p -> {
                             try {
-                                writer.write(String.format("%s,%s,%s,%d,%d,%d,%s\n",
+                                writer.write(String.format("%s,%s,%s,%d,%d,%s,%s\n",
                                         p.project(),
                                         p.className(),
                                         p.fullPath(),
                                         p.statements(),
                                         p.complexity(),
-                                        p.churn(),
+                                        p.commitId(),
                                         p.epoch()
                                         ));
                             } catch (IOException e) {

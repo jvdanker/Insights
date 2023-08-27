@@ -1,25 +1,25 @@
 package net.vdanker.parser;
 
+import net.vdanker.parser.model.*;
 import org.eclipse.jgit.lib.ObjectId;
 import parsers.JavaParser;
-import net.vdanker.parser.model.FormalParameter;
-import net.vdanker.parser.model.JavaImportDeclaration;
-import net.vdanker.parser.model.JavaMethod;
-import net.vdanker.parser.model.JavaStats;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 
 public class JavaListener extends parsers.JavaParserBaseListener implements ParseTreeListener {
     final Parser parser;
     final ObjectId objectId;
-
     String packageDeclaration;
     String className;
-    List<JavaMethod> methods = new ArrayList<>();
+//    List<JavaMethod> methods = new ArrayList<>();
+    List<JavaClass> classes = new ArrayList<>();
+    Stack<JavaClass> currentClass = new Stack<>();
     List<String> methodCalls;
     List<JavaImportDeclaration> importDeclarations = new ArrayList<>();
     int blockStatements;
@@ -38,7 +38,8 @@ public class JavaListener extends parsers.JavaParserBaseListener implements Pars
                 this.getFQClassName(),
                 this.packageDeclaration,
                 this.importDeclarations,
-                this.methods
+//                this.methods,
+                this.classes
         );
     }
 
@@ -55,6 +56,16 @@ public class JavaListener extends parsers.JavaParserBaseListener implements Pars
 
     public void enterClassDeclaration(JavaParser.ClassDeclarationContext ctx) {
         this.className = ctx.identifier().getText();
+
+        this.currentClass.push(
+                new JavaClass(
+                        this.getFQClassName(),
+                        new ArrayList<>()));
+    }
+
+    public void exitClassDeclaration(JavaParser.ClassDeclarationContext ctx) {
+        JavaClass pop = this.currentClass.pop();
+        this.classes.add(pop);
     }
 
     public void enterMethodDeclaration(JavaParser.MethodDeclarationContext ctx) {
@@ -80,7 +91,8 @@ public class JavaListener extends parsers.JavaParserBaseListener implements Pars
                 this.localVariableDeclarations,
                 this.methodStart,
                 ctx.stop.getLine());
-        this.methods.add(method);
+        if (this.currentClass.isEmpty()) return; // enums
+        this.currentClass.peek().methods().add(method);
 
         this.methodCalls = null;
         this.formalParametersList = null;

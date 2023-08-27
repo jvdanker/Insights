@@ -6,5 +6,7 @@ public record JavaStats(
         String fqClassName,
         String packageDeclaration,
         List<JavaImportDeclaration> imports,
-        List<JavaMethod> methods) {
+//        List<JavaMethod> methods,
+        List<JavaClass> classes) {
 }
+

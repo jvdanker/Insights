@@ -27,7 +27,6 @@ function subtractMonths(date, months) {
 }
 
 function _chart(d3, flare, tile, DOM, complexity, statements, projects, startdate) {
-    console.log(flare, complexity, statements, projects);
     flare = d3.filter(flare, i =>
         i.complexity > complexity &&
         i.size > statements &&
