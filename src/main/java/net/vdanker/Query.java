@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class Query {
@@ -190,14 +191,16 @@ public class Query {
                     );
                 }
 
-                Tree tree = new Tree("root", -1, new HashMap<>());
+                Tree tree = new Tree("root", -1, -1, new HashMap<>());
                 entries.forEach(e -> parseEntry(e, tree));
-
-//                System.out.println(tree);
-
-                String fileName = "treemap-stratify/files/data.csv";
+                String fileName = "/Users/juan/workspace/github.com/Insights/circles/src/components/circles/notebook/files/data.json";
                 BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-                writer.write("name,size,complexity,project,fullPath,lineStart,epoch\n");
+                printTree(writer, tree);
+                writer.close();;
+
+                fileName = "treemap-stratify/files/data.csv";
+                BufferedWriter writer2 = new BufferedWriter(new FileWriter(fileName));
+                writer2.write("name,size,complexity,project,fullPath,lineStart,epoch\n");
 
                 entries.stream()
                         .map(Query::permutationsOf)
@@ -206,7 +209,7 @@ public class Query {
                         .stream().sorted(Comparator.comparingInt(String::length))
                         .forEach(p -> {
                             try {
-                                writer.write(String.format("%s,\n", p));
+                                writer2.write(String.format("%s,\n", p));
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
@@ -251,55 +254,86 @@ public class Query {
             if (current.tree().containsKey(s1)) {
                 current = current.tree().get(s1);
             } else {
-                Tree leaf = new Tree(s1, -1, new HashMap<>());
+                Tree leaf = new Tree(s1, -1, -1, new HashMap<>());
                 current.tree().put(s1, leaf);
                 current = leaf;
             }
         }
 
-        Tree classNameChild = new Tree(entry.className(), -1, new HashMap<>());
-        current.tree().put(entry.className(), classNameChild);
+        Tree classNameChild;
+        if (current.tree().containsKey(entry.className)) {
+            classNameChild = current.tree().get(entry.className);
+        } else {
+            classNameChild = new Tree(entry.className(), -1, -1, new HashMap<>());
+            current.tree().put(entry.className(), classNameChild);
+        }
 
-        Tree methodNameChild = new Tree(entry.methodName(), entry.statements, null);
+        Tree methodNameChild = new Tree(entry.methodName(), entry.statements, entry.complexity,null);
         classNameChild.tree().put(entry.methodName(), methodNameChild);
     }
 
-    private static void printTree(BufferedWriter writer, Tree tree) {
+    private static void printTree(BufferedWriter writer, Tree tree) throws IOException {
+
+        writer.write("{\n");
+        writer.write("\"name\": \"root\",\n");
+        writer.write("\"children\": [\n");
+
+        AtomicReference<Boolean> f = new AtomicReference<>(false);
+//        tree.tree().remove("com");
+//        tree.tree().remove("org");
+//        tree.tree().remove("liquibase");
         tree.tree().forEach((k,v) -> {
             try {
-                printLeave(writer, 0, v);
+                printLeave(writer, 0, v, f.get());
+                f.set(true);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
+
+        writer.write("]\n");
+        writer.write("}\n");
     }
 
-    private static void printLeave(BufferedWriter writer, int index, Tree tree) throws IOException {
+    private static void printLeave(BufferedWriter writer, int index, Tree tree, boolean first) throws IOException {
         String tabs = "\t".repeat(index);
         String tabs1 = "\t".repeat(index + 1);
 
-        writer.write(tabs + "{");
-        writer.write(tabs1 + "\"name\": \"" + tree.name() + "\",");
-        writer.write(tabs1 + "\"children\": [");
+        if (first) {
+            writer.write(",");
+        }
+
+        writer.write(tabs + "{\n");
+        writer.write(tabs1 + "\"name\": \"" + tree.name() + "\",\n");
+        writer.write(tabs1 + "\"children\": [\n");
+        AtomicReference<Boolean> f = new AtomicReference<>(false);
         tree.tree.forEach((k,v) -> {
             try {
-                printChild(writer, index + 1, v);
+                printChild(writer, index + 1, v, f.get());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+            f.set(true);
         });
-        writer.write(tabs1 + "]");
-        writer.write(tabs + "}, ");
+        writer.write(tabs1 + "]\n");
+        writer.write(tabs + "}\n");
     }
 
-    private static void printChild(BufferedWriter writer, int index, Tree tree) throws IOException {
+    private static void printChild(BufferedWriter writer, int index, Tree tree, boolean first) throws IOException {
         String tabs = "\t".repeat(index);
         String tabs1 = "\t".repeat(index + 1);
 
         if (tree.tree == null) {
-            writer.write(tabs1 + "{\"name\": \"" + tree.name + "\", \"value\": " + tree.value + "}");
+            if (first) {
+                writer.write(",");
+            }
+
+            writer.write(tabs1 + "{\"name\": \"" + tree.name +
+                    "\", \"value\": " + tree.value +
+                    ", \"complexity\": " + tree.complexity +
+                    "}\n");
         } else {
-            printLeave(writer, index + 1, tree);
+            printLeave(writer, index + 1, tree, first);
         }
     }
 
@@ -307,7 +341,7 @@ public class Query {
 
     record Child(String name, Children children, int value) {}
 
-    record Tree(String name, int value, Map<String, Tree> tree) {}
+    record Tree(String name, int value, int complexity, Map<String, Tree> tree) {}
 
 
     record Entry(
@@ -318,7 +352,8 @@ public class Query {
             int statements,
             int complexity,
             String fullPath,
-            int lineStart, Date epoch) {
+            int lineStart,
+            Date epoch) {
 
     }
 
